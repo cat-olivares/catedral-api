@@ -1,6 +1,5 @@
 ## Dependencias 
 ```bash
-# Para q nestJS lea el .env
 $ npm i @nestjs/config
 
 # mongoose
