@@ -68,7 +68,7 @@ export class AuthService {
       });
 
       // enviar email con el token
-    }
+    } 
     return { message: 'Si el email existe, se ha enviado un enlace para restablecer la contraseña' };
   }
 

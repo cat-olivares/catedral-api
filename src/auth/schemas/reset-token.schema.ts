@@ -11,6 +11,6 @@ export class ResetToken extends Document {
 
   @Prop({ required: true })
   expDate: Date;
-}
+}   
 
 export const ResetTokenSchema = SchemaFactory.createForClass(ResetToken);

@@ -70,6 +70,6 @@ export class AuthController {
     return this.authService.forgotPassword(dto.email);
   }
 
-  // reset password (con token)
+  // to do reset password (con token)
 
 }

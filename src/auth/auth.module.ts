@@ -20,7 +20,7 @@ import { ResetToken, ResetTokenSchema } from './schemas/reset-token.schema';
         secret: cfg.get<string>('JWT_SECRET', 'change-me'),
         signOptions: { expiresIn: cfg.get<string>('JWT_EXPIRES_IN', '1d') },
       }),
-    }),
+    }), 
     MongooseModule.forFeature([
       { 
         name: ResetToken.name, 
