@@ -7,6 +7,8 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
 import { ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ResetToken, ResetTokenSchema } from './schemas/reset-token.schema';
 
 @Module({
   imports: [
@@ -19,6 +21,12 @@ import { ConfigService } from '@nestjs/config';
         signOptions: { expiresIn: cfg.get<string>('JWT_EXPIRES_IN', '1d') },
       }),
     }),
+    MongooseModule.forFeature([
+      { 
+        name: ResetToken.name, 
+        schema: ResetTokenSchema,
+      },
+    ]),
   ],
   providers: [AuthService, LocalStrategy, JwtStrategy],
   controllers: [AuthController],

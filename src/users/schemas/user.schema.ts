@@ -25,10 +25,6 @@ export const UserSchema = SchemaFactory.createForClass(User);
 
 const SALT_ROUNDS = process.env.BCRYPT_SALT_ROUNDS ? parseInt(process.env.BCRYPT_SALT_ROUNDS) : 10;
 
-async function hashPassword(password: string): Promise<string> {
-    return bcrypt.hash(password, SALT_ROUNDS);
-}
-
 async function hashIfNeeded(update: any) {
     if (!update) return update;
 

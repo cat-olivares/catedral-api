@@ -1,13 +1,16 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, isValidObjectId  } from 'mongoose';
+import { Model } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './schemas/user.schema';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(
+	@InjectModel(User.name) 
+	private userModel: Model<User>
+) {}
   
   async create(dto: CreateUserDto): Promise<User> {
 		const emailExists = await this.userModel.exists({ email: dto.email.toLowerCase() });
@@ -24,30 +27,17 @@ export class UsersService {
 		return this.userModel.find().exec();
 	}
 
-  /**Busca por id, email o name  
-	 * POST {url}/users/{id} || {email} || {name}
-	 * @param param String (id, email o name)
-	 * @returns User
-	 * @throws statusCode: 404 si el string no es encontrado
-	 * @example
-	 * { "message": "Usuario no encontrado",
-			 "error": "Not Found",
-				"statusCode": 404 }
-	*/
-	async findOne(param: string): Promise<User> {
-		let user: User | null = null;
-		if (isValidObjectId(param)) {
-			user = await this.userModel.findById(param).exec();
-		} else if (param.includes('@')) {
-			user = await this.userModel.findOne({ email: param }).exec();
-		} else {
-			user = await this.userModel.findOne({ name: param }).exec();
-		}
-		if (!user) {
-			throw new NotFoundException('Usuario no encontrado');
-		}
-		return user;
+  async findByIdWithPassword(id: string) {
+		return await this.userModel.findById(id).select('+password');
+  }
+
+	async findByEmail(email: string) {
+		return await this.userModel.findOne({ email: email.toLowerCase() });
 	}
+
+	async findByEmailWithPassword(email: string) {
+		return this.userModel.findOne({ email: email.toLowerCase() }).select('+password');
+  }
 
   
   async update(id: string, dto: UpdateUserDto) {
@@ -68,7 +58,4 @@ export class UsersService {
 	}
 
 
-  async findByEmailWithPassword(email: string) {
-    return this.userModel.findOne({ email: email.toLowerCase() }).select('+password');
-  }
 }

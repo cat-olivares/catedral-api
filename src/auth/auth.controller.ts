@@ -1,7 +1,7 @@
-import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Request, Put } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
-import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto, ForgotPasswordDto, LoginDto } from './dto/login.dto';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { UsersService } from 'src/users/users.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -50,5 +50,26 @@ export class AuthController {
   me(@Request() req: any) {
     return req.user; // req.user viene de JwtStrategy.validate()
   }
+
+  /**
+   * PUT /auth/change-password
+   * - Ruta protegida con JWT
+   */
+  @UseGuards(JwtAuthGuard)
+  @Put('change-password')
+  async changePassword(@Body() dto: ChangePasswordDto, @Request() req) {
+    return this.authService.changePassword(
+      req.user.userId, 
+      dto.oldPassword, 
+      dto.newPassword
+    ); 
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  // reset password (con token)
 
 }

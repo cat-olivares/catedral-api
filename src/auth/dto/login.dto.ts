@@ -23,3 +23,17 @@ export class RegisterDto {
   @IsString()
   phone: string;
 }
+
+export class ChangePasswordDto {
+  @IsString()
+  oldPassword: string;  
+  
+  @IsString()
+  @MinLength(6)
+  newPassword: string;  
+}
+
+export class ForgotPasswordDto {
+  @IsEmail()
+  email: string;
+}
