@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Get, UseGuards, Request, Put } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
-import { ChangePasswordDto, ForgotPasswordDto, LoginDto } from './dto/login.dto';
+import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RegisterDto } from './dto/login.dto';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { UsersService } from 'src/users/users.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -32,7 +32,7 @@ export class AuthController {
    * - Devuelve access_token para que quede logueado al registrarse
    */
   @Post('register')
-  async register(@Body() dto: CreateUserDto) {
+  async register(@Body() dto: RegisterDto) {
     const user = await this.usersService.create({
       ...dto,
       role: 'customer' 
