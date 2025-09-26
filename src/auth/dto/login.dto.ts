@@ -37,3 +37,12 @@ export class ForgotPasswordDto {
   @IsEmail()
   email: string;
 }
+
+export class ResetPasswordDto {
+  @IsString()
+  resetToken: string;
+  
+  @IsString()
+  @MinLength(6)
+  newPassword: string;
+}

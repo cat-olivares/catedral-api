@@ -15,6 +15,8 @@ $ npm i bcrypt
 # passport para autenticacion y JWT
 $ npm i @nestjs/passport passport passport-local @nestjs/jwt passport-jwt
 
+# nodemailer
+npm install nodemailer
 
 ```
 

@@ -9,6 +9,7 @@ import { UsersModule } from '../users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ResetToken, ResetTokenSchema } from './schemas/reset-token.schema';
+import { MailService } from './services/mail.service';
 
 @Module({
   imports: [
@@ -29,7 +30,7 @@ import { ResetToken, ResetTokenSchema } from './schemas/reset-token.schema';
       },
     ]),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  providers: [AuthService, LocalStrategy, JwtStrategy, MailService],
   controllers: [AuthController],
   exports: [AuthService],
 })

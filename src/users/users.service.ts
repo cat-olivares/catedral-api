@@ -8,9 +8,9 @@ import { User } from './schemas/user.schema';
 @Injectable()
 export class UsersService {
   constructor(
-	@InjectModel(User.name) 
-	private userModel: Model<User>
-) {}
+		@InjectModel(User.name) 
+		private userModel: Model<User>
+	) {}
   
   async create(dto: CreateUserDto): Promise<User> {
 		const emailExists = await this.userModel.exists({ email: dto.email.toLowerCase() });
@@ -19,13 +19,13 @@ export class UsersService {
 			throw new BadRequestException('Email ya registrado');
 		}
 		const createdUser = new this.userModel(dto);
-    await createdUser.save();
+		await createdUser.save();
 		return createdUser;
-	}
+  }
 
   async findAll(): Promise<User[]> {
 		return this.userModel.find().exec();
-	}
+  }
 
   async findByIdWithPassword(id: string) {
 		return await this.userModel.findById(id).select('+password');
@@ -39,8 +39,7 @@ export class UsersService {
 		return this.userModel.findOne({ email: email.toLowerCase() }).select('+password');
   }
 
-  
-  async update(id: string, dto: UpdateUserDto) {
+  async update(id: any, dto: UpdateUserDto) {
 		return await this.userModel.findByIdAndUpdate(
       { _id: id }, 
       dto, 
