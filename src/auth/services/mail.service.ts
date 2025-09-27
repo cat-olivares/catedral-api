@@ -15,22 +15,13 @@ export class MailService {
 				pass: config.get<string>('MAIL_PASS', 'm5qHPHnwvzUjptRkcx')
 			}
   	});
-		/*
-		this.transporter = nodemailer.createTransport({
-			host: 'smtp.ethereal.email',
-			port: 587,
-			auth: {
-        user: 'thelma84@ethereal.email',
-        pass: 'm5qHPHnwvzUjptRkcx'
-				}
-		});*/
 	}
 
   async sendResetPassEmail(to: string, token: string) {
 		const resetlink = `${this.config.get<string>('FRONTEND_URL', 'http://localhost:4200')}/reset-password?token=${token}`;
     
 		await this.transporter.sendMail({
-			from: `"Perfumes Catedral" <${this.config.get<string>('MAIL_USER', 'noreply@PerfumesCatedral.cl')}>`,
+			from: `"Soporte Perfumes Catedral" <${this.config.get<string>('MAIL_USER', 'noreply@PerfumesCatedral.cl')}>`,
       to,
       subject: 'Restablecer contraseña',
       html: `<p>Para restablecer tu contraseña, <a href="${resetlink}">Haz click aquí</a></p><p>Si no solicitaste un cambio de contraseña, ignora este correo.</p>`,

@@ -46,7 +46,6 @@ export class AuthService {
 
   async changePassword(userId: string, oldPassword: string, newPassword: string) {
     const user = await this.usersService.findByIdWithPassword(userId);
-    console.log(user);
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }

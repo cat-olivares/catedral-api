@@ -51,7 +51,6 @@ export class UsersService {
     ).exec();
 	}
 
-
 	async delete(id: string) {
 		return await this.userModel.findByIdAndDelete({ _id: id }).exec();
 	}
