@@ -7,7 +7,12 @@ const config = new ConfigService();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    forbidNonWhitelisted: true,
+    validateCustomDecorators: true,
+  }));
   await app.listen(config.get<number>('PORT', 3000));
 }
 bootstrap();

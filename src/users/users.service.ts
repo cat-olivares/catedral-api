@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -13,13 +13,12 @@ export class UsersService {
 	) {}
   
   async create(dto: CreateUserDto): Promise<User> {
-		const emailExists = await this.userModel.exists({ email: dto.email.toLowerCase() });
-		if (emailExists) {
-			console.log('Email ya registrado');
-			throw new BadRequestException('Email ya registrado');
-		}
-		const createdUser = new this.userModel(dto);
-		await createdUser.save();
+	const emailExists = await this.userModel.exists({ email: dto.email.toLowerCase() });
+	if (emailExists) {
+		throw new BadRequestException('Email ya registrado');
+	}
+	const createdUser = new this.userModel(dto);
+	await createdUser.save();
 		return createdUser;
   }
 
@@ -31,7 +30,7 @@ export class UsersService {
 		return await this.userModel.findById(id).select('+password');
   }
 
-	async findByEmail(email: string) {
+  async findByEmail(email: string) {
 		return await this.userModel.findOne({ email: email.toLowerCase() });
 	}
 
