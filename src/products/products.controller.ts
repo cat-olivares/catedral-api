@@ -2,7 +2,6 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestExc
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { Types } from 'mongoose';
 
 @Controller('products')
 export class ProductsController {
@@ -19,27 +18,9 @@ export class ProductsController {
   }
 
   @Get()
-  async findByCategories(@Query('categories') categories?: string) {
-    if (!categories) {
-      return this.productsService.findAll(); 
-    }
-    // Normalizar ids (separar, quitar vacíos y duplicados)
-    const ids = Array.from(
-      new Set(categories.split(',').map((s) => s.trim()).filter(Boolean))
-    );
-    if (ids.length === 0) {
-      throw new BadRequestException('Parámetro "categories" vacío');
-    }
-    // Validar los ids ObjectId
-    const objectIds = ids.map((id) => {
-      if (!Types.ObjectId.isValid(id)) {
-        throw new BadRequestException(`ID de categoría inválido: ${id}`);
-      }
-      return new Types.ObjectId(id);
-    });
-    const filter = { categories: { $all: objectIds } };
-    return this.productsService.findByCategories(filter);
-  } // GET /products?categories=68d89d6c...
+  async findAll(){
+    return this.productsService.findAll();
+  }
 
   @Get(':id')
   async findOne(@Param('id') id: string) {

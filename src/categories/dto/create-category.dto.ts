@@ -5,10 +5,10 @@ export class CreateCategoryDto {
 	@IsString()
 	@IsNotEmpty()
 	@Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toLowerCase() : value
-  )
+	typeof value === 'string' ? value.trim().toLowerCase() : value
+	)
 	name: string;
-	
+
 	@IsOptional()
 	@IsString()
 	description?: string;

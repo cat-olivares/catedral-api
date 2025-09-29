@@ -1,5 +1,5 @@
 import { IsArray, IsMongoId, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from "class-validator";
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export class CreateProductDto {
   @IsString()
@@ -18,6 +18,7 @@ export class CreateProductDto {
   @IsMongoId({ each: true })
   categories?: string[]; // array de ObjectId de categorías
 
+  // @Type(() => Number)
   @IsNumber()
   @Min(0)
   price: number;
@@ -26,13 +27,11 @@ export class CreateProductDto {
   @IsString()
   img_url?: string;
 
-  /*
-  @IsMongoId({ each: true })
-  stock: string; // ObjectId
-
+  // stock inicial (opcional, default 0)
+  // @Type(() => Number)
+  @IsNumber()
+  @Min(0) 
   @IsOptional()
-  @IsArray()
-  @IsMongoId({ each: true })
-  valorations?: string[]; // array de ObjectId de categorías
-*/
+  initialQuantity?: number = 0;
+
 }

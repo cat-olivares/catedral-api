@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { Category } from 'src/categories/schemas/category.schema';
+import { Stock } from 'src/stock/schemas/stock.schema';
 
 @Schema({ timestamps: true })
 export class Product extends Document {
@@ -20,10 +21,9 @@ export class Product extends Document {
 	@Prop()
 	img_url?: string;
 
-	/*
 	@Prop({ type: [{ type: Types.ObjectId, ref: Stock.name }] })
 	stock: Types.ObjectId;
-
+	/*
 	@Prop({ type: [{ type: Types.ObjectId, ref: Valoration.name }] })
 	valorations?: Types.ObjectId[];
 	*/
