@@ -12,7 +12,7 @@ export class Stock extends Document {
 
 export const StockSchema = SchemaFactory.createForClass(Stock);
 
-// available 'virtual' (no persiste en la BD)
+// campo 'available' virtual (no persiste en la BD)
 StockSchema.virtual('available').get(function () {
   return Math.max(0, (this.quantity ?? 0) - (this.reserved ?? 0));
 });

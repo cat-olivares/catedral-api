@@ -13,12 +13,13 @@ export class CreateProductDto {
   @IsNotEmpty()
   name: string;
 
+  // array de ObjectId de categorías
   @IsOptional()
   @IsArray()
   @IsMongoId({ each: true })
-  categories?: string[]; // array de ObjectId de categorías
+  categories?: string[]; 
 
-  // @Type(() => Number)
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   price: number;
@@ -28,7 +29,7 @@ export class CreateProductDto {
   img_url?: string;
 
   // stock inicial (opcional, default 0)
-  // @Type(() => Number)
+  @Type(() => Number)
   @IsNumber()
   @Min(0) 
   @IsOptional()

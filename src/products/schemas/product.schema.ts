@@ -24,7 +24,7 @@ export class Product extends Document {
 	@Prop({ type: [{ type: Types.ObjectId, ref: Stock.name }] })
 	stock: Types.ObjectId;
 	/*
-	@Prop({ type: [{ type: Types.ObjectId, ref: Valoration.name }] })
+	@Prop({ type: [{ type: Types.ObjectId, ref: ProductValoration.name }] })
 	valorations?: Types.ObjectId[];
 	*/
 }
