@@ -4,12 +4,14 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Product } from './schemas/product.schema';
+import { Category } from 'src/categories/schemas/category.schema';
 import { Stock } from 'src/stock/schemas/stock.schema';
 
 @Injectable()
 export class ProductsService {
   constructor(
     @InjectModel(Product.name) private readonly productModel: Model<Product>,
+    @InjectModel(Category.name) private readonly categoryModel: Model<Category>,
     @InjectModel(Stock.name) private readonly stockModel: Model<Stock>,
   ) {}
 
@@ -63,12 +65,15 @@ export class ProductsService {
   }
 
   async findOne(id: string) {
-    const product = await this.productModel.findById(id).exec();
+    const product = await this.productModel
+    .findById(id)
+    .populate({ path: 'categories', select: 'name' }) // ← trae _id y name
+    .populate({ path: 'stock' })                      // ← quantity, reserved, y virtual available
+    .exec();
+
     if (!product) {
       throw new BadRequestException('Producto no encontrado');
     }
-    console.log(product.categories);
-
     return product;
   }
 
