@@ -67,8 +67,8 @@ export class ProductsService {
   async findOne(id: string) {
     const product = await this.productModel
     .findById(id)
-    .populate({ path: 'categories', select: 'name' }) // ← trae _id y name
-    .populate({ path: 'stock' })                      // ← quantity, reserved, y virtual available
+    .populate({ path: 'categories', select: 'name' })
+    .populate({ path: 'stock' }) 
     .exec();
 
     if (!product) {
