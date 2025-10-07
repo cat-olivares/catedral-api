@@ -8,6 +8,8 @@ import { AuthModule } from './auth/auth.module';
 import { ProductsModule } from './products/products.module';
 import { CategoriesModule } from './categories/categories.module';
 import { StockModule } from './stock/stock.module';
+import { ReservationsModule } from './reservations/reservations.module';
+
 
 @Module({
   imports: [
@@ -28,6 +30,7 @@ import { StockModule } from './stock/stock.module';
     ProductsModule,
     CategoriesModule,
     StockModule,
+    ReservationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
