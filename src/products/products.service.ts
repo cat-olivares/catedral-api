@@ -50,7 +50,7 @@ export class ProductsService {
       .exec();
 
     } catch (error) {
-      // Si hay error eliminar el stock
+      // Si hay error, eliminar el stock
       await this.stockModel.deleteOne({ _id: stock._id });
       throw error;
     }
@@ -70,7 +70,6 @@ export class ProductsService {
     .populate({ path: 'categories', select: 'name' })
     .populate({ path: 'stock' }) 
     .exec();
-
     if (!product) {
       throw new BadRequestException('Producto no encontrado');
     }

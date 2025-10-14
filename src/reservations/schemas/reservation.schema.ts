@@ -15,7 +15,7 @@ export class Reservation extends Document{
   @Prop({ type: String, enum: ['PENDING', 'CONFIRMED', 'CANCELLED'], default: 'PENDING' })
   status!: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
 
-  @Prop({ type: [Types.ObjectId], ref: ReservationDetail.name, default: [], required: true })
+  @Prop({ type: [{ type: Types.ObjectId, ref: ReservationDetail.name }] })
   reservationDetail!: Types.ObjectId[];
 }
 

@@ -33,7 +33,7 @@ export class CreateReservationDto {
   total!: number;
 
   @IsArray()
-  @ValidateNested({ each: true })
+  //@ValidateNested({ each: true })
   @Type(() => CreateReservationDetailDto)
   reservationDetail!: CreateReservationDetailDto[];
 }

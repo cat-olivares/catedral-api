@@ -23,12 +23,7 @@ import { MailService } from './services/mail.service';
         signOptions: { expiresIn: cfg.get<string>('JWT_EXPIRES_IN', '1d') },
       }),
     }),
-    MongooseModule.forFeature([
-      { 
-        name: ResetToken.name, 
-        schema: ResetTokenSchema,
-      },
-    ]),
+    MongooseModule.forFeature([{ name: ResetToken.name, schema: ResetTokenSchema, }]),
   ],
   providers: [AuthService, LocalStrategy, JwtStrategy, MailService],
   controllers: [AuthController],
