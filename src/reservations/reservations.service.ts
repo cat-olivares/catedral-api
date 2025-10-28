@@ -7,6 +7,10 @@ import { ReservationDetail } from './schemas/reservation-detail.schema';
 import { Model, Types } from 'mongoose';
 import { Product } from 'src/products/schemas/product.schema';
 import { Stock } from 'src/stock/schemas/stock.schema';
+import { NotificationsService } from 'src/notifications/notifications.service';
+import { NotificationChannel, NotificationType } from 'src/notifications/schemas/notification.schema';
+import { User } from 'src/users/schemas/user.schema';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class ReservationsService {
@@ -16,8 +20,21 @@ export class ReservationsService {
     @InjectModel(ReservationDetail.name) private readonly reservationDetailModel: Model<ReservationDetail>,
     @InjectModel(Product.name) private readonly productModel: Model<Product>,
     @InjectModel(Stock.name) private readonly stockModel: Model<Stock>,
+    @InjectModel(User.name) private readonly userModel: Model<User>, 
+    private readonly notificationsService: NotificationsService,
+    private readonly config: ConfigService,
   ) {}
   
+  private async resolveAdminId(): Promise<string | null> {
+    const fromEnv = this.config.get<string>('ADMIN_USER_ID');
+    if (fromEnv && /^[a-fA-F0-9]{24}$/.test(fromEnv)) {
+      return fromEnv;
+    }
+  
+    const admin = await this.userModel.findOne({ role: 'admin' }).select('_id').lean().exec();
+    return admin ? String(admin._id) : null;
+  }
+
   async create(dto: CreateReservationDto) {
     if (!dto.reservationDetail?.length) {
       throw new HttpException('reservationDetail debe tener al menos 1 ítem', HttpStatus.BAD_REQUEST);
@@ -49,7 +66,7 @@ export class ReservationsService {
       );
 
       if (upd.matchedCount !== 1) {
-        // leer estado actual para el mensaje (opcional)
+        // leer estado actual para el mensaje
         const curr = await this.stockModel.findById(stockId).select('quantity reserved').lean();
         const availableNow = Math.max(0, Number(curr?.quantity ?? 0) - Number(curr?.reserved ?? 0));
         
@@ -91,6 +108,32 @@ export class ReservationsService {
       total: computedTotal,
       reservationDetail: detailIds,
     });
+
+    // Crear notificación TO do
+    const adminId = await this.resolveAdminId(); 
+    if (adminId) {
+      try {
+        await this.notificationsService.create({
+          title: 'Nueva reserva',
+          content: `Se ha crreado una nueva reserva por ${computedTotal}.`,
+          type: NotificationType.RESERVATION_CREATED,
+          channel: NotificationChannel.PUSH,
+          userId: String(adminId),
+          reservationId: String(reservation._id),
+          data: {
+            entity: 'reservation',
+            entityId: String(reservation._id),
+            route: `/reservas/${reservation._id}`, // o tu deeplink real 
+            action: 'open_details',
+            badgeDelta: 1,
+          },
+        });
+      } catch (e) {
+        // No rompas la creación de la reserva si falla la noti: loguea y sigue
+        // logger.warn('No se pudo crear la notificación de reserva', e);
+        console.log('No se pudo crear la notificación de reserva', e);
+      }
+    }
 
     // populate para el front
     const populated = await this.reservationModel

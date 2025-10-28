@@ -6,6 +6,7 @@ import { ReservationDetail, ReservationDetailSchema } from './schemas/reservatio
 import { Reservation, ReservationSchema } from './schemas/reservation.schema';
 import { Product, ProductSchema } from 'src/products/schemas/product.schema';
 import { Stock, StockSchema } from 'src/stock/schemas/stock.schema';
+import { NotificationsModule } from 'src/notifications/notifications.module';
 
 @Module({
   controllers: [ReservationsController],
@@ -15,6 +16,7 @@ import { Stock, StockSchema } from 'src/stock/schemas/stock.schema';
     MongooseModule.forFeature([{ name: Stock.name, schema: StockSchema }]),
     MongooseModule.forFeature([{ name: ReservationDetail.name, schema:ReservationDetailSchema }]),
     MongooseModule.forFeature([{ name: Reservation.name, schema: ReservationSchema }]),
+    NotificationsModule,
   ],
 })
 export class ReservationsModule {}
