@@ -1,10 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { HydratedDocument } from 'mongoose';
 import * as bcrypt from 'bcrypt';
-import { ConfigService } from '@nestjs/config';
+
+export type UserDocument = HydratedDocument<User>;
 
 @Schema()
-export class User extends Document {
+export class User {
 	@Prop({ required: true, trim: true })
 	name: string;
 
@@ -21,9 +22,8 @@ export class User extends Document {
 	role: 'admin' | 'customer';
 }
 
-const config = new ConfigService();
+const SALT_ROUNDS = Number(process.env.BCRYPT_SALT_ROUNDS ?? 10);
 export const UserSchema = SchemaFactory.createForClass(User);
-const SALT_ROUNDS = config.get<number>('BCRYPT_SALT_ROUNDS', 10);
 
 async function hashIfNeeded(update: any) {
 	if (!update) return update;
@@ -37,12 +37,11 @@ async function hashIfNeeded(update: any) {
 	return update;
 }
     
-UserSchema.pre('save', async function (next) {
-	const doc = this as User;
-	if (!doc.isModified('password')) {
+UserSchema.pre('save', async function (this: UserDocument, next) {
+	if (!this.isModified('password')) {
 		return next();
 	}
-	doc.password = await bcrypt.hash(doc.password, SALT_ROUNDS);
+	this.password = await bcrypt.hash(this.password, SALT_ROUNDS);
 	next();
 });
 

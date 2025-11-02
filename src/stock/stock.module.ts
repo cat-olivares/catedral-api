@@ -7,9 +7,11 @@ import { Stock, StockSchema } from './schemas/stock.schema';
 @Module({
   controllers: [StockController],
   providers: [StockService],
-  imports: [
-    MongooseModule.forFeature([{ name: Stock.name, schema: StockSchema }])
-  ],
   exports: [StockService],
+  imports: [
+    MongooseModule.forFeature([
+      { name: Stock.name, schema: StockSchema },
+    ])
+  ],
 })
 export class StockModule {}

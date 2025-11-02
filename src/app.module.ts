@@ -9,6 +9,7 @@ import { ProductsModule } from './products/products.module';
 import { CategoriesModule } from './categories/categories.module';
 import { StockModule } from './stock/stock.module';
 import { ReservationsModule } from './reservations/reservations.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 
 @Module({
@@ -31,6 +32,7 @@ import { ReservationsModule } from './reservations/reservations.module';
     CategoriesModule,
     StockModule,
     ReservationsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

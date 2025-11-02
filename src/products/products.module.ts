@@ -9,11 +9,13 @@ import { Stock, StockSchema } from 'src/stock/schemas/stock.schema';
 @Module({
   controllers: [ProductsController],
   providers: [ProductsService],
-  imports: [
-    MongooseModule.forFeature([{ name: Product.name, schema: ProductSchema }]),
-    MongooseModule.forFeature([{ name: Category.name, schema: CategorySchema }]),
-    MongooseModule.forFeature([{ name: Stock.name, schema: StockSchema }])
-  ],
   exports: [ProductsService],
+  imports: [
+    MongooseModule.forFeature([
+      { name: Product.name, schema: ProductSchema },
+      { name: Category.name, schema: CategorySchema },
+      { name: Stock.name, schema: StockSchema },
+    ])
+  ],
 })
 export class ProductsModule {}
