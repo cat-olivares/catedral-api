@@ -10,6 +10,8 @@ import { CategoriesModule } from './categories/categories.module';
 import { StockModule } from './stock/stock.module';
 import { ReservationsModule } from './reservations/reservations.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { ChatsModule } from './chats/chats.module';
+import { MessagesModule } from './messages/messages.module';
 
 
 @Module({
@@ -33,6 +35,8 @@ import { NotificationsModule } from './notifications/notifications.module';
     StockModule,
     ReservationsModule,
     NotificationsModule,
+    ChatsModule,
+    MessagesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
