@@ -10,6 +10,31 @@ import { Stock } from 'src/stock/schemas/stock.schema';
 import { User } from 'src/users/schemas/user.schema';
 import { ConfigService } from '@nestjs/config';
 
+const reservationPopulate = [
+  {
+    path: 'user',
+    select: 'name email phone'
+  },
+  {
+    path: 'reservationDetail',
+    select: 'product quantity subtotal',
+    populate: {
+      path: 'product',
+      select: 'code name price',
+      populate: [
+        {
+          path: 'stock',
+          select: 'quantity reserved available'
+        },
+        {
+          path: 'categories',
+          select: 'name'
+        }
+      ]
+    }
+  }
+];
+
 @Injectable()
 export class ReservationsService {
 
@@ -27,7 +52,6 @@ export class ReservationsService {
     if (fromEnv && /^[a-fA-F0-9]{24}$/.test(fromEnv)) {
       return fromEnv;
     }
-  
     const admin = await this.userModel.findOne({ role: 'admin' }).select('_id').lean().exec();
     return admin ? String(admin._id) : null;
   }
@@ -146,13 +170,16 @@ export class ReservationsService {
   }
 
   async findAll() {
-    return this.reservationModel.find().exec();
+    return this.reservationModel
+    .find()
+    .populate(reservationPopulate)
+    .exec();
   }
 
   async findOne(id: string) {
     const reservation = await this.reservationModel
     .findById(id)
-    .populate({ path: 'reservationDetail' })
+    .populate(reservationPopulate)
     .exec()
     if (!reservation) {
       throw new BadRequestException('Reservación no encontrada');
