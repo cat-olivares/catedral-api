@@ -12,24 +12,6 @@ export class ReservationsController {
   async create(@Body() createReservationDto: CreateReservationDto) {
     return this.reservationsService.create(createReservationDto);
   }
-  
-  // GET /reservations?userId=<mongoId>&status=<PENDING|CONFIRMED|CANCELLED>
-  /*
-  @Get()
-  async listByUser(@Query('userId') userId: string, @Query('status') status?: ReservationStatus) {
-    if (!userId || !Types.ObjectId.isValid(userId)) {
-      throw new BadRequestException('userId inválido');
-    }
-    if (status && !['PENDING', 'CONFIRMED', 'CANCELLED'].includes(status)) {
-      throw new BadRequestException('status inválido');
-    }
-    return this.reservationsService.listByUser(userId, status);
-  }
-
-  @Get()
-  async findAll() {
-    return this.reservationsService.findAll();
-  }*/
 
    // Listado de toodo: GET /reservations?status=&page=&limit=
   @Get()

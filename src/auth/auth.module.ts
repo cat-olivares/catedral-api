@@ -14,19 +14,19 @@ import { MailService } from './services/mail.service';
 @Module({
   imports: [
     UsersModule,
-    PassportModule,
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     ConfigModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
-      useFactory: (cfg: ConfigService) => ({
-        secret: cfg.get<string>('JWT_SECRET', 'change-me'),
-        signOptions: { expiresIn: cfg.get<string>('JWT_EXPIRES_IN', '1d') },
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('JWT_SECRET', 'change-me'),
+        signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN', '1d') },
       }),
     }),
     MongooseModule.forFeature([{ name: ResetToken.name, schema: ResetTokenSchema, }]),
   ],
-  providers: [AuthService, LocalStrategy, MailService, /*JwtStrategy*/],
   controllers: [AuthController],
-  exports: [AuthService, JwtModule],
+  providers: [AuthService, LocalStrategy, MailService, JwtStrategy],
+  exports: [AuthService, JwtModule, PassportModule],
 })
 export class AuthModule {}
