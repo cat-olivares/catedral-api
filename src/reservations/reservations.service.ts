@@ -166,10 +166,10 @@ export class ReservationsService {
     if (!Types.ObjectId.isValid(userId)) {
       throw new BadRequestException('userId inválido');
     }
-
     const filter: any = { user: new Types.ObjectId(userId) };
-    if (status) filter.status = status;
-
+    if (status) {
+      filter.status = status;
+    }
     return this.reservationModel
       .find(filter)
       .sort({ createdAt: -1 })
@@ -178,11 +178,23 @@ export class ReservationsService {
       .exec();
   }
 
-  async findAll() {
-    return this.reservationModel
-    .find()
-    .populate(reservationPopulate)
-    .exec();
+  async listAll(opts: { status?: ReservationStatus; page: number; limit: number }) {
+    const filter: any = {};
+    if (opts.status) filter.status = opts.status;
+
+    const [items, total] = await Promise.all([
+      this.reservationModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip((opts.page - 1) * opts.limit)
+        .limit(opts.limit)
+        .populate(reservationPopulate)
+        .lean()
+        .exec(),
+      this.reservationModel.countDocuments(filter),
+    ]);
+
+    return { items, total, page: opts.page, limit: opts.limit };
   }
 
   async findOne(id: string) {
