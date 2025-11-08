@@ -12,6 +12,7 @@ import { ReservationsModule } from './reservations/reservations.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ChatsModule } from './chats/chats.module';
 import { MessagesModule } from './messages/messages.module';
+import { RealtimeModule } from './realtime/realtime.module';
 
 
 @Module({
@@ -36,7 +37,8 @@ import { MessagesModule } from './messages/messages.module';
     ReservationsModule,
     NotificationsModule,
     ChatsModule,
-    MessagesModule,
+    MessagesModule, 
+    RealtimeModule, 
   ],
   controllers: [AppController],
   providers: [AppService],

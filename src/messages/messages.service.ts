@@ -5,7 +5,6 @@ import { UpdateMessageDto } from './dto/update-message.dto';
 import { Message, MessageDocument, EstadoMensaje } from './schemas/messages.schema';
 import { Model, Types } from 'mongoose';
 
-// Tipado mínimo para operar sobre Chat (sin importar su schema completo)
 type ChatDoc = {
   _id: Types.ObjectId;
   clienteId: Types.ObjectId;
@@ -80,7 +79,7 @@ export class MessagesService {
 
     const items = await this.messageModel.find(q).sort({ createdAt: -1 }).limit(limit).lean();
 
-    // Devolvemos orden cronológico ascendente para pintar en UI sin invertir
+    // retornar inverso para que este en orden "cronologico"
     return items.reverse();
   }
 
@@ -99,12 +98,11 @@ export class MessagesService {
     const chat = await this.chatModel.findById(chatId).select('_id clienteId adminId').lean();
     if (!chat) throw new NotFoundException('Chat no encontrado');
 
-    // const readerIsCliente = new Types.ObjectId(readerUserId).equals(chat.clienteId);
     const readerIsCliente = String(readerUserId) === String(chat.clienteId);
 
     const filter = {
       chat: new Types.ObjectId(chatId),
-      // solo mensajes del otro emisor que aún no tienen readAt
+      // solo mensajes del otro emisor que no tienen readAt
       emisor: readerIsCliente ? chat.adminId : chat.clienteId,
       readAt: { $exists: false },
     };

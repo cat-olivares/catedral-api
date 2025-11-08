@@ -7,7 +7,7 @@ import { Chat, ChatSchema } from './schemas/chat.schema';
 @Module({
   controllers: [ChatsController],
   providers: [ChatsService],
-  exports: [MongooseModule],
+  exports: [MongooseModule, ChatsService],
   imports: [
     MongooseModule.forFeature([{ name: Chat.name, schema: ChatSchema }]),
   ]

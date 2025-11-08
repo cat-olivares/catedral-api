@@ -25,8 +25,8 @@ import { MailService } from './services/mail.service';
     }),
     MongooseModule.forFeature([{ name: ResetToken.name, schema: ResetTokenSchema, }]),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, MailService],
+  providers: [AuthService, LocalStrategy, MailService, /*JwtStrategy*/],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

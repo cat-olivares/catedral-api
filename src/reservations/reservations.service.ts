@@ -9,6 +9,33 @@ import { Product } from 'src/products/schemas/product.schema';
 import { Stock } from 'src/stock/schemas/stock.schema';
 import { User } from 'src/users/schemas/user.schema';
 import { ConfigService } from '@nestjs/config';
+import { UsersService } from 'src/users/users.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
+
+const reservationPopulate = [
+  {
+    path: 'user',
+    select: 'name email phone'
+  },
+  {
+    path: 'reservationDetail',
+    select: 'product quantity subtotal',
+    populate: {
+      path: 'product',
+      select: 'code name price',
+      populate: [
+        {
+          path: 'stock',
+          select: 'quantity reserved available'
+        },
+        {
+          path: 'categories',
+          select: 'name'
+        }
+      ]
+    }
+  }
+];
 
 @Injectable()
 export class ReservationsService {
@@ -19,18 +46,10 @@ export class ReservationsService {
     @InjectModel(Product.name) private readonly productModel: Model<Product>,
     @InjectModel(Stock.name) private readonly stockModel: Model<Stock>,
     @InjectModel(User.name) private readonly userModel: Model<User>, 
+    private readonly usersService: UsersService,
+    private readonly notificationsService: NotificationsService,
     private readonly config: ConfigService,
   ) {}
-  
-  private async resolveAdminId(): Promise<string | null> {
-    const fromEnv = this.config.get<string>('ADMIN_USER_ID');
-    if (fromEnv && /^[a-fA-F0-9]{24}$/.test(fromEnv)) {
-      return fromEnv;
-    }
-  
-    const admin = await this.userModel.findOne({ role: 'admin' }).select('_id').lean().exec();
-    return admin ? String(admin._id) : null;
-  }
 
   async create(dto: CreateReservationDto) {
     if (!dto.reservationDetail?.length) {
@@ -39,10 +58,10 @@ export class ReservationsService {
 
     const productIds = dto.reservationDetail.map(d => new Types.ObjectId(d.product));
     const products = await this.productModel
-    .find({ _id: { $in: productIds } })
-    .select('_id code name price stock')
-    .populate({ path: 'stock', select: 'available reserved quantity' }) 
-    .lean();
+      .find({ _id: { $in: productIds } })
+      .select('_id code name price stock')
+      .populate({ path: 'stock', select: 'available reserved quantity' }) 
+      .lean();
 
     const byId = new Map(products.map(p => [p._id.toString(), p]));
     const requiredByProduct = new Map<string, number>();
@@ -105,34 +124,32 @@ export class ReservationsService {
       total: computedTotal,
       reservationDetail: detailIds,
     });
+    
+    // Crear notificación
+    try {
+      // Obtener datos del cliene (nombre)
+      const customerId = reservation.user.toString();
+      const userDatos = await this.usersService.findByIdWithPassword(customerId);
+      const customerRol = userDatos?.role;
+      let customerName;
+      
+      if (customerRol === 'customer') {
+        customerName = userDatos?.name;
+        
+      } else {
+        customerName = "Invitad@";
 
-    /*
-    // Crear notificación TO do
-    const adminId = await this.resolveAdminId(); 
-    if (adminId) {
-      try {
-        await this.notificationsService.create({
-          title: 'Nueva reserva',
-          content: `Se ha crreado una nueva reserva por ${computedTotal}.`,
-          type: NotificationType.RESERVATION_CREATED,
-          channel: NotificationChannel.PUSH,
-          userId: String(adminId),
-          reservationId: String(reservation._id),
-          data: {
-            entity: 'reservation',
-            entityId: String(reservation._id),
-            route: `/reservas/${reservation._id}`, // o tu deeplink real 
-            action: 'open_details',
-            badgeDelta: 1,
-          },
-        });
-      } catch (e) {
-        // No rompas la creación de la reserva si falla la noti: loguea y sigue
-        // logger.warn('No se pudo crear la notificación de reserva', e);
-        console.log('No se pudo crear la notificación de reserva', e);
       }
+  
+      await this.notificationsService.reservationCreated({
+        reservationId: reservation._id.toString(),
+        customerId,
+        customerName: customerName,
+      });
+    } catch (e) {
+      console.log('No se pudo crear la notificación de reserva', e);
     }
-    */
+
     // populate para el front
     const populated = await this.reservationModel
       .findById(reservation._id)
@@ -145,14 +162,33 @@ export class ReservationsService {
     return populated ?? reservation;
   }
 
+  async listByUser(userId: string, status?: ReservationStatus) {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('userId inválido');
+    }
+
+    const filter: any = { user: new Types.ObjectId(userId) };
+    if (status) filter.status = status;
+
+    return this.reservationModel
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .populate(reservationPopulate)
+      .lean()
+      .exec();
+  }
+
   async findAll() {
-    return this.reservationModel.find().exec();
+    return this.reservationModel
+    .find()
+    .populate(reservationPopulate)
+    .exec();
   }
 
   async findOne(id: string) {
     const reservation = await this.reservationModel
     .findById(id)
-    .populate({ path: 'reservationDetail' })
+    .populate(reservationPopulate)
     .exec()
     if (!reservation) {
       throw new BadRequestException('Reservación no encontrada');

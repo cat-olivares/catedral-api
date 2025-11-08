@@ -18,6 +18,13 @@ $ npm i @nestjs/passport passport passport-local @nestjs/jwt passport-jwt
 # nodemailer
 npm install nodemailer
 
+#
+
+#FMC
+npm install firebase-admin
+# (opcional pero recomendado para tipado completo)
+npm install --save-dev @types/firebase-admin
+
 ```
 
 ## Compilar y correr

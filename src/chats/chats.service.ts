@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { Chat, ChatDocument } from './schemas/chat.schema';
@@ -10,8 +10,7 @@ export class ChatsService {
   ) {}
 
   /**
-   * Obtiene o crea un chat por par (clienteId, adminId).
-   * Idempotente gracias al índice único.
+   * Obtiene o crea un chat por par (clienteId, adminId). Idempotente gracias al índice único.
    */
   async getOrCreateByPair(clienteId: string, adminId: string) {
     const cId = new Types.ObjectId(clienteId);
@@ -34,7 +33,7 @@ export class ChatsService {
       });
       return created.toObject();
     } catch (err: any) {
-      // Si otro proceso lo creó justo antes, lo leemos
+      // Si otro proceso lo creo justo antes
       if (err?.code === 11000) {
         const again = await this.chatModel.findOne({ clienteId: cId, adminId: aId }).lean();
         if (again) return again;
@@ -48,20 +47,20 @@ export class ChatsService {
    * Obtiene un chat por id (valida que el usuario pertenezca al par).
    */
   async getByIdForUser(chatId: string, userId: string) {
-    if (!Types.ObjectId.isValid(chatId)) throw new NotFoundException('Chat no encontrado');
-  
+    if (!Types.ObjectId.isValid(chatId)) {
+      throw new NotFoundException('Chat no encontrado');
+    }
     const chat = await this.chatModel.findById(new Types.ObjectId(chatId)).lean();
-    if (!chat) throw new NotFoundException('Chat no encontrado');
-  
+    if (!chat) {
+      throw new NotFoundException('Chat no encontrado');
+    }
     const uid = String(userId);
     const belongs =
       uid === String(chat.clienteId) ||
       uid === String(chat.adminId);
   
     if (!belongs) {
-      // si prefieres ocultar existencia, deja NotFound; si quieres claridad, usa Forbidden
-      throw new NotFoundException('Chat no encontrado');
-      // throw new ForbiddenException('No perteneces a este chat');
+      throw new ForbiddenException('No perteneces a este chat');
     }
     return chat;
   }
@@ -107,7 +106,6 @@ export class ChatsService {
       }
     );
   }
-
   
   async findById(id: string) {
     return `This action returns a #${id} message`;

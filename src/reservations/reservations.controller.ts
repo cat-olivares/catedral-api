@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException } from '@nestjs/common';
 import { ReservationsService } from './reservations.service';
-import { CreateReservationDto } from './dto/create-reservation.dto';
+import { CreateReservationDto, ReservationStatus } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
+import { Types } from 'mongoose';
 
 @Controller('reservations')
 export class ReservationsController {
@@ -10,6 +11,18 @@ export class ReservationsController {
   @Post()
   async create(@Body() createReservationDto: CreateReservationDto) {
     return this.reservationsService.create(createReservationDto);
+  }
+  
+  // GET /reservations?userId=<mongoId>&status=<PENDING|CONFIRMED|CANCELLED>
+  @Get()
+  async listByUser(@Query('userId') userId: string, @Query('status') status?: ReservationStatus) {
+    if (!userId || !Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('userId inválido');
+    }
+    if (status && !['PENDING', 'CONFIRMED', 'CANCELLED'].includes(status)) {
+      throw new BadRequestException('status inválido');
+    }
+    return this.reservationsService.listByUser(userId, status);
   }
 
   @Get()

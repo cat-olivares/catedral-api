@@ -6,15 +6,16 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ResetToken } from './schemas/reset-token.schema';
 import { MailService } from './services/mail.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-    @InjectModel(ResetToken.name)
-    private resetTokenModel: Model<ResetToken>,
+    private readonly cfg: ConfigService,
     private mailService: MailService,
+    @InjectModel(ResetToken.name) private resetTokenModel: Model<ResetToken>,
   ) {}
 
   // Validar credenciales (email + password)
@@ -38,8 +39,13 @@ export class AuthService {
       role: user.role, 
       email: user.email 
     };
+    const token = this.jwtService.sign(payload, {
+      // por si algo quedo mal configurado
+      secret: this.cfg.get<string>('JWT_SECRET'),
+      expiresIn: this.cfg.get<string>('JWT_EXPIRES_IN', '1d'),
+    });
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: token,
       user,
     };
   }
