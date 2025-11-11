@@ -14,6 +14,9 @@ export class Reservation {
   @Prop({ type: String, enum: ['PENDING', 'CONFIRMED', 'CANCELLED'], default: 'PENDING' })
   status!: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
 
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Chat' }] })
+  chatId: Types.ObjectId;
+
   @Prop({ type: [{ type: Types.ObjectId, ref: 'ReservationDetail' }] })
   reservationDetail!: Types.ObjectId[];
 }

@@ -10,7 +10,7 @@ export class CreateChatDto {
 }
 
 export class ReadChatDto {
-  // quién marca como leído (el que abrió el chat)
+  // quien marca como leído (el que abrió el chat)
   @IsMongoId()
   readerUserId!: string;
 }

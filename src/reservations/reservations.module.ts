@@ -9,6 +9,7 @@ import { Stock, StockSchema } from 'src/stock/schemas/stock.schema';
 import { User, UserSchema } from 'src/users/schemas/user.schema';
 import { UsersModule } from 'src/users/users.module';
 import { NotificationsModule } from 'src/notifications/notifications.module';
+import { ChatsModule } from 'src/chats/chats.module';
 
 @Module({
   controllers: [ReservationsController],
@@ -16,6 +17,7 @@ import { NotificationsModule } from 'src/notifications/notifications.module';
   imports: [
     UsersModule,
     NotificationsModule,
+    ChatsModule,
     MongooseModule.forFeature([
       { name: Product.name, schema: ProductSchema },
       { name: Stock.name, schema: StockSchema },

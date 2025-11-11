@@ -20,6 +20,32 @@ type ChatDoc = {
   updatedAt?: Date;
 };
 
+const messagePopulate = [
+  {
+    path: 'reservaition',
+    select: 'total status createdAt reservationDetail',
+    populate: {
+      path: 'reservationDetail',
+      select: 'product quantity subtotal',
+      populate: {
+        path: 'product',
+        select: 'code name price',
+        populate: [
+          {
+            path: 'stock',
+            select: 'quantity reserved available'
+          },
+          {
+            path: 'categories',
+            select: 'name'
+          }
+        ]
+      }
+    }
+  },
+  
+];
+
 @Injectable()
 export class MessagesService {
   constructor(
@@ -77,7 +103,12 @@ export class MessagesService {
     const q: any = { chat: new Types.ObjectId(chatId) };
     if (before) q.createdAt = { $lt: new Date(before) };
 
-    const items = await this.messageModel.find(q).sort({ createdAt: -1 }).limit(limit).lean();
+    const items = await this.messageModel
+    .find(q)
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .populate(messagePopulate)
+    .lean();
 
     // retornar inverso para que este en orden "cronologico"
     return items.reverse();

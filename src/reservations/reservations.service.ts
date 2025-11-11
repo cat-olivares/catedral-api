@@ -11,6 +11,7 @@ import { User } from 'src/users/schemas/user.schema';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from 'src/users/users.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { ChatsService } from 'src/chats/chats.service';
 
 const reservationPopulate = [
   {
@@ -48,6 +49,7 @@ export class ReservationsService {
     @InjectModel(User.name) private readonly userModel: Model<User>, 
     private readonly usersService: UsersService,
     private readonly notificationsService: NotificationsService,
+    private readonly chatsService: ChatsService,
     private readonly config: ConfigService,
   ) {}
 
@@ -91,7 +93,6 @@ export class ReservationsService {
           HttpStatus.BAD_REQUEST
         );
       }
-      
       if (upd.modifiedCount !== 1) {
         const available = (producto.stock && typeof producto.stock === 'object') ? producto.stock.available : undefined;
         throw new HttpException(
@@ -117,33 +118,45 @@ export class ReservationsService {
     // total = suma de subtotales recalculados
     const computedTotal = insertedDetails.reduce((acc, d) => acc + Number(d.subtotal ?? 0), 0);
 
-    // crear la reserva apuntando a los detalles
+    // Crear el chat
+    const customerId = new Types.ObjectId(dto.user);
+    // console.log("[RES.SRV] ADMIN_USER_ID", this.config.get<string>('ADMIN_USER_ID', '68d9bc388629e807c77810d2')); TO do
+
+    try {
+      const chat = await this.chatsService.getOrCreateByPair(
+        customerId.toString(),
+        this.config.get<string>('ADMIN_USER_ID', '68d9bc388629e807c77810d2')
+      );
+      console.log("[RES.SRV] chatID", chat._id);
+
+    } catch (e) {
+      console.log('No se pudo crear el chat', e);
+    }
+
+    // Crear la reserva apuntando a los detalles
     const reservation = await this.reservationModel.create({
-      user: new Types.ObjectId(dto.user),
+      user: customerId,
       status: (dto.status as any) ?? ReservationStatus.PENDING,
       total: computedTotal,
+      //chatId: chat._id,
       reservationDetail: detailIds,
     });
     
     // Crear notificación
     try {
       // Obtener datos del cliene (nombre)
-      const customerId = reservation.user.toString();
-      const userDatos = await this.usersService.findByIdWithPassword(customerId);
+      const userDatos = await this.usersService.findByIdWithPassword(customerId.toString());
       const customerRol = userDatos?.role;
       let customerName;
       
       if (customerRol === 'customer') {
         customerName = userDatos?.name;
-        
       } else {
         customerName = "Invitad@";
-
       }
-  
       await this.notificationsService.reservationCreated({
         reservationId: reservation._id.toString(),
-        customerId,
+        customerId: customerId.toString(),
         customerName: customerName,
       });
     } catch (e) {
@@ -209,6 +222,7 @@ export class ReservationsService {
   }
 
   /**
+   * Modifica la reserva. Si el status cambia a CONFIRMED, se elimina el chat asociado a esta reserva
    * Ajusta stock cuando el status cambia de:
    * * PENDING -> CONFIRMED: resta la cantidad 'reserved' a 'quantity' del stock del producto
    * * PENDING -> CANCELLED: libera stock reservado
@@ -216,13 +230,13 @@ export class ReservationsService {
    * @param dto Datos de la reserva para actualizar
    * @returns Reservacion actualizada
    */
-  async update(id: string, dto: UpdateReservationDto) {
-    // 1) Validación básica de status si viene
+  async update(id: string, dto: UpdateReservationDto) { // TO DO eliminar chat cuando CONFIRMED o CANCELLED
+    // Validar el status
     if (dto.status && !['PENDING', 'CONFIRMED', 'CANCELLED'].includes(dto.status)) {
       throw new BadRequestException('status inválido');
     }
 
-    // 2) Cargar reserva + detalles actuales (ordenados)
+    // Cargar reserva y sus detalles actuales (ordenados)
     const reservation = await this.reservationModel.findById(id);
     if (!reservation) throw new BadRequestException('Reservación no encontrada');
 
@@ -242,13 +256,13 @@ export class ReservationsService {
       oid => currentDetails.find(d => d._id.toString() === oid.toString())!
     );
 
-    // 3) Normalizar DTO entrante
+    // Normalizar DTO entrante
     const incoming = Array.isArray(dto.reservationDetail) ? dto.reservationDetail : null;
     const oldLen = currentByIndex.length;
     const newLen = incoming ? incoming.length : oldLen;
     const overlap = Math.min(oldLen, newLen);
 
-    // 4) Prepara helpers de stock
+    // Prepara helpers de stock
     const collectProductIds = new Set<string>();
     // productos actuales
     for (const d of currentByIndex) collectProductIds.add(d.product.toString());
@@ -273,7 +287,7 @@ export class ReservationsService {
     };
     const priceOf = (productId: string): number => Number((prodById.get(productId) as any)?.price ?? 0);
 
-    // 5) Diffs de líneas y acumulación de deltas para stock
+    // Diffs de líneas y acumulación de deltas para stock
     type UpdateSame = { id: Types.ObjectId; productId: string; newQty: number; keepSubtotalFromDto: boolean; dtoSubtotal?: number };
     type CreateSpec = { productId: string; qty: number; recompute: boolean };
     const toUpdateSame: UpdateSame[] = [];
@@ -358,7 +372,7 @@ export class ReservationsService {
       }
     }
 
-    // 6) Aplicar deltas de reserved (primero las liberaciones, luego las reservas)
+    // Aplicar deltas de reserved (primero las liberaciones, luego las reservas)
     // liberar reserved
     for (const [pid, dec] of reserveDecByProduct.entries()) {
       const stockId = stockIdOf(pid);
@@ -382,13 +396,13 @@ export class ReservationsService {
       }
     }
 
-    // 7) Persistir cambios de detalles
-    // 7a) bajas
+    // Persistir cambios de detalles
+    // a) bajas
     if (toDeleteIds.length) {
       await this.reservationDetailModel.deleteMany({ _id: { $in: toDeleteIds } });
     }
 
-    // 7b) updates (mismo product; decide si recalcula o respeta subtotal del DTO)
+    // b) updates (mismo product; decide si recalcula o respeta subtotal del DTO)
     for (const u of toUpdateSame) {
       const payload: any = {
         product: new Types.ObjectId(u.productId),
@@ -402,7 +416,7 @@ export class ReservationsService {
       await this.reservationDetailModel.findByIdAndUpdate(u.id, { $set: payload }, { new: false });
     }
 
-    // 7c) altas (recalcular)
+    // c) altas (recalcular)
     let createdDetails: ReservationDetail[] = [];
     if (toCreate.length) {
       const payload = toCreate.map(c => ({
@@ -413,7 +427,7 @@ export class ReservationsService {
       createdDetails = await this.reservationDetailModel.insertMany(payload);
     } 
 
-    // 8) Construir nuevo array de IDs en el MISMO ORDEN del DTO (por índice)
+    // Construir nuevo array de IDs en el MISMO ORDEN del DTO (por índice)
     const createdQueue = createdDetails.map(d => (d as any)._id as Types.ObjectId);
     const finalDetailIds: Types.ObjectId[] = [];
     if (incoming) {
@@ -436,7 +450,7 @@ export class ReservationsService {
       finalDetailIds.push(...currentIds);
     }
 
-    // 9) Recalcular total (suma de subtotales actuales)
+    // Recalcular total (suma de subtotales actuales)
     const finalDetails = await this.reservationDetailModel
       .find({ _id: { $in: finalDetailIds } })
       .select('_id subtotal')
@@ -444,7 +458,7 @@ export class ReservationsService {
 
     const total = finalDetails.reduce((acc, d) => acc + Number(d.subtotal ?? 0), 0);
 
-    // 10) Si hay cambio de estado, aplicar transición con cantidades FINALES
+    // Si hay cambio de estado, aplicar transición con cantidades FINALES
     if (dto.status && prevStatus !== nextStatus) {
       if (prevStatus === 'PENDING' && (nextStatus === 'CONFIRMED' || nextStatus === 'CANCELLED')) {
         // cargar detalles finales con product/quantity
@@ -472,6 +486,8 @@ export class ReservationsService {
             if (upd.matchedCount !== 1) {
               throw new BadRequestException(`No hay reservado suficiente para confirmar producto ${pid}`);
             }
+            // eliminar chat
+
           } else if (nextStatus === 'CANCELLED') {
             // liberar reservado
             const upd = await this.stockModel.updateOne(
@@ -513,7 +529,7 @@ export class ReservationsService {
    * @param id Id de la reserva a eliminar
    * @returns Reserva eliminada
    */
-  async remove(id: string) {
+  async remove(id: string) { //TO DO
     const reservation = await this.reservationModel.findById(id).lean();
     if (!reservation) throw new BadRequestException('Reservación no encontrada');
 

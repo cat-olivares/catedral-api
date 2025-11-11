@@ -21,6 +21,7 @@ export class NotificationsService {
    */
   async reservationCreated(params: { reservationId: string; customerId: string; customerName?: string; }) {
     const { reservationId, customerId, customerName } = params;
+    const linkAlChat = `/admin/chat/${customerId}`; // TO DO link web directo al chat ajustar la URL del front
 
     // 1) Crear registro Notification (queued)
     const doc = new this.notifModel({
@@ -32,7 +33,7 @@ export class NotificationsService {
         target: 'chat',
         customerId,
         reservationId,
-        link: `/admin/chat/${customerId}`, // TO DO link web directo al chat ajustar la URL del front
+        link: linkAlChat, 
       },
       status: NotificationStatus.QUEUED,
     });
@@ -48,7 +49,7 @@ export class NotificationsService {
     }
 
     // 3) Construir payload FCM con deep-link
-    const webAbsoluteLink = this.makeWebAbsoluteLink(`/admin/chat/${customerId}`);
+    const webAbsoluteLink = this.makeWebAbsoluteLink(linkAlChat);
 
     const message: admin.messaging.MulticastMessage = {
       tokens,
