@@ -29,10 +29,10 @@ export class MessagesController {
     return { ok: true, data };
   }
 
-  @Get()
-  findAll() {
-    return this.messagesService.findAll();
-  }
+  // @Get()
+  // findAll() {
+  //   return this.messagesService.findAll();
+  // }
 
   @Get(':id')
   findOne(@Param('id') id: string) {

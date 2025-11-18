@@ -26,6 +26,9 @@ export class Chat {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   adminId!: Types.ObjectId;
 
+  @Prop({ type: Types.ObjectId, ref: 'Reservation', index: true })
+  reservationId?: Types.ObjectId;
+
   // Contadores de no leídos (se actualizan desde MessagesService)
   @Prop({ type: Number, default: 0 })
   unreadByCliente!: number;
@@ -37,6 +40,9 @@ export class Chat {
   @Prop({ type: LastMessage, default: {} })
   lastMessage?: LastMessage;
 
+  @Prop({ type: Object, default: {} })
+  meta?: Record<string, any>;
+
   @Prop({ type: Date, default: () => new Date() })
   createdAt!: Date;
 
@@ -46,8 +52,8 @@ export class Chat {
 
 export const ChatSchema = SchemaFactory.createForClass(Chat);
 
-// Unico por par cliente–admin (chat por par)
-ChatSchema.index({ clienteId: 1, adminId: 1 }, { unique: true });
+ChatSchema.index({ reservationId: 1 }, { unique: true, sparse: true });
+
 
 // Para el listado de chats en orden de actividad
 ChatSchema.index({ updatedAt: -1 });

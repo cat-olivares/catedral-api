@@ -1,36 +1,40 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateReservationDetailDto, CreateReservationDto, ReservationStatus } from './create-reservation.dto';
-import { IsArray, IsEnum, IsMongoId, IsNumber, Min } from 'class-validator';
+// src/reservations/dto/update-reservation.dto.ts
+import { IsArray, IsEnum, IsMongoId, IsNumber, IsOptional, Min } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ReservationStatus } from './create-reservation.dto';
 
 export class UpdateReservationDetailDto {
-    @IsMongoId()
-    product!: string;
+  @IsMongoId()
+  @IsOptional()
+  product?: string;
 
-    @IsNumber()
-    @Min(1)
-    quantity!: number;
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  quantity?: number;
 
-    @IsNumber()
-    @Min(0)
-    subtotal!: number;
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  subtotal?: number;
 }
 
 export class UpdateReservationDto {
   @IsMongoId()
-  user!: string;
+  @IsOptional()
+  user?: string;
 
   @IsEnum(ReservationStatus)
-  status!: ReservationStatus;
+  @IsOptional()
+  status?: ReservationStatus;
 
   @IsNumber()
   @Min(0)
-  total!: number;
+  @IsOptional()
+  total?: number;
 
   @IsArray()
-  //@ValidateNested({ each: true })
   @Type(() => UpdateReservationDetailDto)
-  reservationDetail!: UpdateReservationDetailDto[];
+  @IsOptional()
+  reservationDetail?: UpdateReservationDetailDto[];
 }
-
-

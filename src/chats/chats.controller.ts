@@ -15,7 +15,7 @@ function getUserId(req: any): string {
 @UseGuards(JwtAuthGuard)
 @Controller('chats')
 export class ChatsController {
-  constructor(private readonly chatsService: ChatsService) {}
+  constructor(private readonly chatsService: ChatsService) { }
   /*constructor(
     private readonly chatsService: ChatsService,
     @InjectModel(Chat.name) private readonly chatModel: Model<ChatDocument>,
@@ -29,9 +29,23 @@ export class ChatsController {
    */
   @Post()
   async createOrGet(@Body() dto: CreateChatDto) {
-    const chat = await this.chatsService.getOrCreateByPair(dto.clienteId, dto.adminId);
+    console.log('[ChatsController] POST /chats dto =>', dto);
+    const chat = await this.chatsService.getOrCreateByPair(
+      dto.clienteId,
+      dto.adminId,
+      dto.reservationId,
+    );
     return { ok: true, data: chat };
   }
+
+   @Post(':chatId/read')
+  async read(@Param('chatId') chatId: string, @Body() body: any, @Req() req: any) {
+    const tokenUserId = getUserId(req);
+    const readerUserId = body?.readerUserId ?? tokenUserId;
+    await this.chatsService.markRead(chatId, readerUserId);
+    return { ok: true };
+  }
+
 
   /**
    * Lista "mis chats" (del usuario autenticado).
@@ -43,7 +57,7 @@ export class ChatsController {
     const data = await this.chatsService.listMine({ userId, roleHint });
     return { ok: true, data };
   }
-  
+
   /** Obtiene un chat específico (si pertenezco al par) */
   @Get(':chatId')
   async getOne(@Param('chatId') chatId: string, @Req() req: any) {
@@ -56,12 +70,11 @@ export class ChatsController {
    * Marca leídos para el lector actual (resetea unread del lado correspondiente).
    * La marca de readAt de los mensajes está en MessagesService.markReadForChat()
    */
-  @Post(':chatId/read')
-  async read(@Param('chatId') chatId: string, @Body() body: any, @Req() req: any) {
-    const tokenUserId = getUserId(req);
-    const readerUserId = body?.readerUserId ?? tokenUserId;
-    await this.chatsService.markRead(chatId, readerUserId);
-    return { ok: true };
+  @Patch(':chatId/meta')
+  async updateMeta(@Param('chatId') chatId: string, @Body() body: any) {
+    console.log('[ChatsController] PATCH /chats/:id/meta', chatId, body);
+    const chat = await this.chatsService.updateMeta(chatId, body?.meta ?? body);
+    return { ok: true, data: chat };
   }
 
   /*@Get(':chatId/__debug_raw')

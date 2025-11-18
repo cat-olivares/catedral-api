@@ -1,4 +1,4 @@
-import { IsMongoId } from 'class-validator';
+import { IsMongoId, IsOptional } from 'class-validator';
 
 export class CreateChatDto {
   // chat por par: cliente–admin
@@ -7,6 +7,10 @@ export class CreateChatDto {
 
   @IsMongoId()
   adminId!: string;
+
+  @IsOptional()
+  @IsMongoId()
+  reservationId?: string;
 }
 
 export class ReadChatDto {

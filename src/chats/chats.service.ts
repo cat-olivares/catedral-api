@@ -7,41 +7,81 @@ import { Chat, ChatDocument } from './schemas/chat.schema';
 export class ChatsService {
   constructor(
     @InjectModel(Chat.name) private readonly chatModel: Model<ChatDocument>,
-  ) {}
+  ) { }
 
   /**
    * Obtiene o crea un chat por par (clienteId, adminId). Idempotente gracias al índice único.
    */
-  async getOrCreateByPair(clienteId: string, adminId: string) {
+  async getOrCreateByPair(
+    clienteId: string,
+    adminId: string,
+    reservationId?: string,
+  ) {
     const cId = new Types.ObjectId(clienteId);
     const aId = new Types.ObjectId(adminId);
+    const rId = reservationId ? new Types.ObjectId(reservationId) : undefined;
 
-    // Intentar buscar
-    const existing = await this.chatModel.findOne({ clienteId: cId, adminId: aId }).lean();
+    // Si hay reservationId, buscamos solo por reservationId (clave principal)
+    const filter: FilterQuery<Chat> = rId
+      ? { reservationId: rId }
+      : { clienteId: cId, adminId: aId };
+
+    console.log('[ChatsService] getOrCreateByPair filter =>', filter);
+
+    // 1) Intentar buscar chat existente
+    const existing = await this.chatModel.findOne(filter).lean();
     if (existing) {
+      console.log(
+        '[ChatsService] getOrCreateByPair -> existing chat',
+        existing._id,
+      );
       return existing;
     }
 
-    // Crear si no existe (manejar carrera con índice único)
+    // 2) Crear si no existe
+    const payload: any = {
+      clienteId: cId,
+      adminId: aId,
+      unreadByCliente: 0,
+      unreadByAdmin: 0,
+      lastMessage: {},
+      ...(rId ? { reservationId: rId } : {}),
+    };
+
     try {
-      const created = await this.chatModel.create({
-        clienteId: cId,
-        adminId: aId,
-        unreadByCliente: 0,
-        unreadByAdmin: 0,
-        lastMessage: {},
-      });
+      console.log('[ChatsService] getOrCreateByPair -> creating chat', payload);
+      const created = await this.chatModel.create(payload);
       return created.toObject();
     } catch (err: any) {
-      // Si otro proceso lo creo justo antes
+      // Por si se corre en paralelo y el índice unique de reservationId grita
       if (err?.code === 11000) {
-        const again = await this.chatModel.findOne({ clienteId: cId, adminId: aId }).lean();
+        console.warn(
+          '[ChatsService] getOrCreateByPair duplicate key, retrying findOne...',
+          err?.keyValue,
+        );
+        const again = await this.chatModel.findOne(filter).lean();
         if (again) return again;
-        throw new ConflictException('Conflicto creando chat');
       }
       throw err;
     }
   }
+
+  async updateMeta(chatId: string, meta: Record<string, any>) {
+    if (!Types.ObjectId.isValid(chatId)) throw new NotFoundException('Chat no encontrado');
+    console.log('[ChatsService] updateMeta', chatId, meta);
+
+    const chat = await this.chatModel
+      .findByIdAndUpdate(
+        new Types.ObjectId(chatId),
+        { $set: { meta, updatedAt: new Date() } },
+        { new: true },
+      )
+      .lean();
+
+    if (!chat) throw new NotFoundException('Chat no encontrado');
+    return chat;
+  }
+
 
   /**
    * Obtiene un chat por id (valida que el usuario pertenezca al par).
@@ -58,7 +98,7 @@ export class ChatsService {
     const belongs =
       uid === String(chat.clienteId) ||
       uid === String(chat.adminId);
-  
+
     if (!belongs) {
       throw new ForbiddenException('No perteneces a este chat');
     }
@@ -76,13 +116,20 @@ export class ChatsService {
     const q: FilterQuery<Chat> = roleHint === 'cliente'
       ? { clienteId: u }
       : roleHint === 'admin'
-      ? { adminId: u }
-      : { $or: [{ clienteId: u }, { adminId: u }] };
+        ? { adminId: u }
+        : { $or: [{ clienteId: u }, { adminId: u }] };
 
-    const items = await this.chatModel.find(q).sort({ updatedAt: -1 }).limit(limit).lean();
+    const items = await this.chatModel
+      .find(q)
+      .sort({ updatedAt: -1 })
+      .limit(limit)
+      .populate('clienteId', 'name email')
+      .populate('adminId', 'name email')
+      .lean();
 
     return items;
   }
+
 
   /**
    * Marca como leído para el readerUserId:
@@ -94,7 +141,7 @@ export class ChatsService {
     if (!Types.ObjectId.isValid(chatId)) throw new NotFoundException('Chat no encontrado');
     const chat = await this.chatModel.findById(new Types.ObjectId(chatId)).select('_id clienteId adminId').lean();
     if (!chat) throw new NotFoundException('Chat no encontrado');
-  
+
     const readerIsCliente = String(readerUserId) === String(chat.clienteId);
     await this.chatModel.updateOne(
       { _id: chat._id },
@@ -106,7 +153,7 @@ export class ChatsService {
       }
     );
   }
-  
+
   async findById(id: string) {
     return `This action returns a #${id} message`;
   }

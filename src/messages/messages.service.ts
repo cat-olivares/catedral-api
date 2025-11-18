@@ -22,7 +22,7 @@ type ChatDoc = {
 
 const messagePopulate = [
   {
-    path: 'reservaition',
+    path: 'reservation',
     select: 'total status createdAt reservationDetail',
     populate: {
       path: 'reservationDetail',
@@ -107,7 +107,7 @@ export class MessagesService {
     .find(q)
     .sort({ createdAt: -1 })
     .limit(limit)
-    .populate(messagePopulate)
+    // .populate(messagePopulate)
     .lean();
 
     // retornar inverso para que este en orden "cronologico"
