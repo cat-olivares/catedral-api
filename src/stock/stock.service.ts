@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { CreateStockDto } from './dto/create-stock.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -31,5 +31,25 @@ export class StockService {
 
   async remove(id: string) {
     return this.stockModel.findByIdAndDelete({ _id: id }).exec();
+  }
+
+   async increaseQuantity(id: string, amount: number) {
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('amount debe ser mayor que 0');
+    }
+
+    const updated = await this.stockModel
+      .findByIdAndUpdate(
+        id,
+        { $inc: { quantity: amount } },
+        { new: true },
+      )
+      .exec();
+
+    if (!updated) {
+      throw new BadRequestException('Stock no encontrado');
+    }
+
+    return updated;
   }
 }

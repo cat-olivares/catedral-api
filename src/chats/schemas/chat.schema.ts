@@ -48,6 +48,12 @@ export class Chat {
 
   @Prop({ type: Date, default: () => new Date() })
   updatedAt!: Date;
+  
+   @Prop({ type: Boolean, default: false })
+  deletedByCliente!: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  deletedByAdmin!: boolean;
 }
 
 export const ChatSchema = SchemaFactory.createForClass(Chat);

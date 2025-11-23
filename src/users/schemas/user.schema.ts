@@ -20,6 +20,9 @@ export class User {
 
 	@Prop({ required: true, enum: ['admin', 'customer'], default: 'customer' })
 	role: 'admin' | 'customer';
+
+	@Prop({ default: false })
+	isGuest: boolean;
 }
 
 const SALT_ROUNDS = Number(process.env.BCRYPT_SALT_ROUNDS ?? 10);

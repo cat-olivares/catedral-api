@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, BadRequestException } from '@nestjs/common';
 import { StockService } from './stock.service';
 import { CreateStockDto } from './dto/create-stock.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
@@ -25,6 +25,20 @@ export class StockController {
   @Patch(':id')
   async update(@Param('id') id: string, @Body() updateStockDto: UpdateStockDto) {
     return this.stockService.update(id, updateStockDto);
+  }
+
+  @Post(':id/add')
+  async addQuantity(
+    @Param('id') id: string,
+    @Body() body: { amount: number },
+  ) {
+    const amount = Number(body.amount);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('amount debe ser un número mayor que 0');
+    }
+
+    return this.stockService.increaseQuantity(id, amount);
   }
 
   @Delete(':id')

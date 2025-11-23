@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Request, Put } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Request, Put, NotFoundException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from './dto/login.dto';
@@ -10,7 +10,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly usersService: UsersService
-  ) {}
+  ) { }
 
   /**
    * POST /auth/login
@@ -34,29 +34,50 @@ export class AuthController {
   async register(@Body() dto: RegisterDto) {
     const user = await this.usersService.create({
       ...dto,
-      role: 'customer' 
+      role: 'customer'
     } as any);
     return this.authService.login(user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  me(@Request() req: any) {
-    return req.user; // req.user viene de JwtStrategy.validate()
+  async me(@Request() req: any) {
+    // Lo que te puso la JwtStrategy en el payload:
+    const userId = req.user.userId || req.user._id || req.user.id || req.user.sub;
+
+    console.log('[AUTH /me] payload JWT:', req.user);
+    console.log('[AUTH /me] userId detectado:', userId);
+
+    if (!userId) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // Usa el UsersService real, NO el spec de tests
+    const user = await this.usersService.findOne(userId); // ajusta el nombre si tu método se llama distinto
+
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    const plain = (user as any).toObject ? (user as any).toObject() : user;
+    delete plain.password;
+    delete plain.resetToken;
+
+    console.log('[AUTH /me] usuario retornado:', plain);
+
+    return plain;
   }
 
-  /**
-   * PUT /auth/change-password
-   * - Ruta protegida con JWT
-   */
+
+
   @UseGuards(JwtAuthGuard)
   @Put('change-password')
   async changePassword(@Body() dto: ChangePasswordDto, @Request() req) {
     return this.authService.changePassword(
-      req.user.userId, 
-      dto.oldPassword, 
+      req.user.userId,
+      dto.oldPassword,
       dto.newPassword
-    ); 
+    );
   }
 
   @Post('forgot-password')

@@ -82,4 +82,12 @@ export class ChatsController {
     const data = await this.chatModel.findById(chatId).lean();
     return { ok: true, data };
   }*/
+
+  @Delete(':chatId')
+  async deleteForMe(@Param('chatId') chatId: string, @Req() req: any) {
+    const userId = getUserId(req);
+    const role = req?.user?.role ?? 'cliente';
+    const res = await this.chatsService.softDelete(chatId, userId, role);
+    return res;
+  }
 }

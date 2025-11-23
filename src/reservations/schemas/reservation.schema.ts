@@ -19,6 +19,10 @@ export class Reservation {
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'ReservationDetail' }] })
   reservationDetail!: Types.ObjectId[];
+
+  @Prop()
+  customerEmail: string;
+
 }
 
 export const ReservationSchema = SchemaFactory.createForClass(Reservation);

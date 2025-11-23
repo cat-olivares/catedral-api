@@ -130,6 +130,38 @@ export class ChatsService {
     return items;
   }
 
+  async softDelete(chatId: string, userId: string, role: string) {
+  if (!Types.ObjectId.isValid(chatId)) {
+    throw new NotFoundException('Chat no encontrado');
+  }
+
+  const chat = await this.chatModel
+    .findById(new Types.ObjectId(chatId))
+    .select('_id clienteId adminId deletedByCliente deletedByAdmin')
+    .lean();
+  if (!chat) {
+    throw new NotFoundException('Chat no encontrado');
+  }
+
+  const uid = String(userId);
+  const isCliente = uid === String(chat.clienteId);
+  const isAdmin = uid === String(chat.adminId);
+
+  if (!isCliente && !isAdmin) {
+    throw new ForbiddenException('No perteneces a este chat');
+  }
+
+  const update: any = {};
+  if (isAdmin || role === 'admin') {
+    update.deletedByAdmin = true;
+  } else {
+    update.deletedByCliente = true;
+  }
+
+  await this.chatModel.updateOne({ _id: chat._id }, { $set: update });
+  return { ok: true };
+}
+
 
   /**
    * Marca como leído para el readerUserId:
