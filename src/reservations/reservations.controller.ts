@@ -3,6 +3,7 @@ import { ReservationsService } from './reservations.service';
 import { CreateReservationDto, ReservationStatus } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { Types } from 'mongoose';
+import { CreateGuestReservationDto } from 'src/guest/dto/guestReservation.dto';
 
 @Controller('reservations')
 export class ReservationsController {
@@ -75,6 +76,11 @@ export class ReservationsController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.reservationsService.findOne(id);
+  }
+
+  @Post('guest')
+  async createGuest(@Body() dto: CreateGuestReservationDto) {
+    return this.reservationsService.createGuest(dto);
   }
 
 

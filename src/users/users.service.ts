@@ -62,5 +62,55 @@ export class UsersService {
 		return await this.userModel.findByIdAndDelete({ _id: id }).exec();
 	}
 
+	  async createGuest(data: { email: string; name?: string; phone?: string }): Promise<User> {
+    const email = data.email.toLowerCase();
+
+    // Si ya existe un usuario con ese correo, lo reutilizamos (sea guest o normal)
+    const existing = await this.userModel.findOne({ email }).exec();
+    if (existing) {
+      return existing;
+    }
+
+    // Creamos usuario invitado
+    const guest = new this.userModel({
+      name: data.name || 'Invitado',
+      email,
+      phone: data.phone || '',
+      role: 'customer',
+      isGuest: true,
+      // password random solo para cumplir el required, se hashea en los hooks
+      password: Math.random().toString(36).slice(2),
+    });
+
+    await guest.save();
+    return guest;
+  }
+
+
+	async upgradeGuest(id: string, payload: { name: string; phone: string; password: string }): Promise<User> {
+		// Gracias a los hooks del schema, el password se va a hashear en findOneAndUpdate
+		const updated = await this.userModel.findByIdAndUpdate(
+			{ _id: id },
+			{
+				name: payload.name,
+				phone: payload.phone,
+				password: payload.password,
+				isGuest: false,
+			},
+			{
+				new: true,
+				runValidators: true,
+				context: 'query',
+			}
+		).exec();
+
+		if (!updated) {
+			throw new BadRequestException('Usuario no encontrado');
+		}
+
+		return updated;
+	}
+
+
 
 }

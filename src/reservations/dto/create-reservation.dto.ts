@@ -1,6 +1,15 @@
-// src/reservations/dtos/create-reservation.dto.ts
+// src/reservations/dto/create-reservation.dto.ts
 import { Type } from 'class-transformer';
-import { IsArray, IsEnum, IsInt, IsMongoId, IsNumber, Min, ValidateNested, } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsMongoId,
+  IsNumber,
+  IsOptional,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 export enum ReservationStatus {
   PENDING = 'PENDING',
@@ -16,23 +25,27 @@ export class CreateReservationDetailDto {
   @Min(1)
   quantity!: number;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  subtotal!: number;
+  subtotal?: number;
 }
 
 export class CreateReservationDto {
   @IsMongoId()
   user!: string;
 
+  @IsOptional()
   @IsEnum(ReservationStatus)
-  status!: ReservationStatus;
+  status?: ReservationStatus;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  total!: number;
+  total?: number;
 
   @IsArray()
+  @ValidateNested({ each: true })
   @Type(() => CreateReservationDetailDto)
   reservationDetail!: CreateReservationDetailDto[];
 }

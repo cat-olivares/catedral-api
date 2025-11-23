@@ -12,6 +12,8 @@ import { ConfigService } from '@nestjs/config';
 import { UsersService } from 'src/users/users.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { ChatsService } from 'src/chats/chats.service';
+import { CreateGuestReservationDto } from 'src/guest/dto/guestReservation.dto';
+
 
 const reservationPopulate = [
   {
@@ -177,7 +179,7 @@ export class ReservationsService {
       const chat = await this.chatsService.getOrCreateByPair(
         customerId.toString(),
         adminId,
-        reservation._id.toString(),   
+        reservation._id.toString(),
       );
 
       chatId = chat._id as any;
@@ -199,30 +201,24 @@ export class ReservationsService {
     }
 
     // 7) Crear notificación (igual que antes)
-    try {
-      const userDatos = await this.usersService.findByIdWithPassword(
-        customerId.toString()
-      );
-      const customerRol = userDatos?.role;
-      let customerName;
+    const userDatos = await this.usersService.findByIdWithPassword(
+      customerId.toString()
+    );
+    const customerRol = userDatos?.role;
+    let customerName: string | undefined;
 
-      if (customerRol === 'customer') {
-        customerName = userDatos?.name;
-      } else {
-        customerName = 'Invitad@';
-      }
-
-      await this.notificationsService.reservationCreated({
-        reservationId: reservation._id.toString(),
-        customerId: customerId.toString(),
-        customerName: customerName,
-      });
-    } catch (e) {
-      console.log(
-        '[RES.SRV] No se pudo crear la notificación de reserva',
-        e
-      );
+    if (customerRol === 'customer') {
+      customerName = userDatos?.name;
+    } else {
+      customerName = 'Invitad@';
     }
+
+    await this.notificationsService.reservationCreated({
+      reservationId: reservation._id.toString(),
+      customerId: customerId.toString(),
+      customerName,
+      customerEmail: userDatos?.email,   // <- NUEVO
+    });
 
     // 8) populate para el front
     const populated = await this.reservationModel
@@ -745,6 +741,36 @@ export class ReservationsService {
     // Borrar detalles y la reserva
     await this.reservationDetailModel.deleteMany({ _id: { $in: detailIds } });
     return await this.reservationModel.findByIdAndDelete(id).exec();
+  }
+
+
+  async createGuest(dto: CreateGuestReservationDto) {
+    const { name, email, phone, reservationDetail } = dto;
+
+    if (!reservationDetail?.length) {
+      throw new BadRequestException('reservationDetail debe tener al menos 1 ítem');
+    }
+
+    // 1) Buscar o crear usuario invitado ligado a ese correo
+    const user = await this.usersService.createGuest({
+      email,
+      name,
+      phone,
+    });
+
+    // 2) Armar un CreateReservationDto compatible con tu create()
+    const createDto: CreateReservationDto = {
+      user: (user as any)._id.toString(),
+      status: ReservationStatus.PENDING,
+      reservationDetail: reservationDetail.map((d) => ({
+        product: d.product,
+        quantity: d.quantity,
+        // subtotal no se manda, tú lo recalculas adentro de create()
+      })),
+    } as any;
+
+    // 3) Reutilizar TODA tu lógica de create (stock, chat, notificación, etc.)
+    return this.create(createDto);
   }
 
 }

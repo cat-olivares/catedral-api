@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Request, Put, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Request, Put, NotFoundException, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from './dto/login.dto';
@@ -32,12 +32,35 @@ export class AuthController {
    */
   @Post('register')
   async register(@Body() dto: RegisterDto) {
+    // 1) Buscar user por email
+    const existing = await this.usersService.findByEmail(dto.email);
+
+    if (existing) {
+      // a) Si NO es invitado -> correo ya ocupado
+      if (!existing.isGuest) {
+        throw new BadRequestException('Ya existe una cuenta con este correo');
+      }
+
+      // b) Es invitado -> lo convertimos en usuario normal
+      const upgraded = await this.usersService.upgradeGuest(existing._id.toString(), {
+        name: dto.name,
+        phone: dto.phone,
+        password: dto.password,
+      });
+
+      return this.authService.login(upgraded);
+    }
+
+    // 2) No existía -> flujo normal
     const user = await this.usersService.create({
       ...dto,
-      role: 'customer'
+      role: 'customer',
+      isGuest: false,
     } as any);
+
     return this.authService.login(user);
   }
+
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
