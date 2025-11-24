@@ -13,7 +13,7 @@ export class Product {
 
 	@Prop({ type: [{ type: Types.ObjectId, ref: 'Category' }] })
 	// relación N a N: un producto puede estar en varias categorías
-	categories: Types.ObjectId[]; 
+	categories: Types.ObjectId[];
 
 	@Prop({ required: true })
 	price: number;
@@ -27,6 +27,12 @@ export class Product {
 	@Prop({ type: [{ type: Types.ObjectId, ref: ProductValoration.name }] })
 	valorations?: Types.ObjectId[];
 	*/
+
+	@Prop({ type: Number, min: 0, max: 5, default: 0 })
+	rating?: number;         
+
+	@Prop({ type: Number, min: 0, default: 0 })
+	ratingCount?: number;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

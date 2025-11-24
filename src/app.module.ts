@@ -13,6 +13,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { ChatsModule } from './chats/chats.module';
 import { MessagesModule } from './messages/messages.module';
 import { RealtimeModule } from './realtime/realtime.module';
+import { RatingsModule } from './ratings/rating.module';
 
 
 @Module({
@@ -39,6 +40,7 @@ import { RealtimeModule } from './realtime/realtime.module';
     ChatsModule,
     MessagesModule, 
     RealtimeModule, 
+    RatingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
