@@ -12,7 +12,7 @@ export class RatingsService {
   constructor(
     @InjectModel(Rating.name) private readonly ratingModel: Model<Rating>,
     @InjectModel(Product.name) private readonly productModel: Model<Product>,
-  ) {}
+  ) { }
 
   async rate(userId: string, dto: CreateRatingDto) {
     this.logger.log('[RatingsService] rate() called ' + JSON.stringify({ userId, dto }));
@@ -77,4 +77,19 @@ export class RatingsService {
       ratingCount: updatedProduct?.ratingCount,
     };
   }
+
+  // rating.service.ts (backend, NO el de Angular)
+  async findMine(userId: string) {
+    this.logger.log('[RatingsService] findMine() ' + userId);
+
+    const user = new Types.ObjectId(userId);
+
+    const ratings = await this.ratingModel
+      .find({ user })
+      .select('product value') // puedes quitar _id si quieres
+      .lean();
+
+    return ratings;
+  }
+
 }

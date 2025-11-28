@@ -20,5 +20,4 @@ export class Rating {
 
 export const RatingSchema = SchemaFactory.createForClass(Rating);
 
-// cada user solo 1 rating por producto
 RatingSchema.index({ user: 1, product: 1 }, { unique: true });

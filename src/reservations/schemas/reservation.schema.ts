@@ -23,6 +23,9 @@ export class Reservation {
   @Prop()
   customerEmail: string;
 
+  @Prop({ type: Boolean, default: false })
+  wasReopened!: boolean;
+
 }
 
 export const ReservationSchema = SchemaFactory.createForClass(Reservation);

@@ -347,6 +347,9 @@ export class ReservationsService {
     const prevStatus = reservation.status;
     const nextStatus = dto.status ?? prevStatus;
 
+    // NUEVO: saber si esta reserva ya fue reabierta
+    const wasReopened = (reservation as any).wasReopened === true;
+
     const currentIds = (reservation.reservationDetail ?? []) as any as Types.ObjectId[];
     const currentDetails = currentIds.length
       ? await this.reservationDetailModel
@@ -610,7 +613,12 @@ export class ReservationsService {
 
     // 9) Transiciones de estado con cantidades FINALES
     if (dto.status && prevStatus !== nextStatus) {
-      if (prevStatus === 'PENDING' && (nextStatus === 'CONFIRMED' || nextStatus === 'CANCELLED')) {
+      // IMPORTANTE: solo tocamos stock si NO fue reabierta antes
+      if (
+        prevStatus === 'PENDING' &&
+        (nextStatus === 'CONFIRMED' || nextStatus === 'CANCELLED') &&
+        !wasReopened
+      ) {
         const finals = await this.reservationDetailModel
           .find({ _id: { $in: finalDetailIds } })
           .select('product quantity')
@@ -635,7 +643,7 @@ export class ReservationsService {
                 `No hay reservado suficiente para confirmar producto ${pid}`
               );
             }
-            // TODO: aquí podrías borrar el chat asociado a la reserva si quieres
+            // aquí podrías borrar el chat asociado si quisieras
           } else if (nextStatus === 'CANCELLED') {
             const upd = await this.stockModel.updateOne(
               { _id: stockId, reserved: { $gte: qty } },
@@ -669,6 +677,7 @@ export class ReservationsService {
 
     return updated;
   }
+
 
   /**
    * Se elimina la reserva y revierte el stock segun el status:
@@ -704,18 +713,31 @@ export class ReservationsService {
     if (reservation.status !== 'CANCELLED') {
       // Cargar productos con su stock
       const productDocs = await this.productModel
-        .find({ _id: { $in: Array.from(qtyByProduct.keys()).map(id => new Types.ObjectId(id)) } })
+        .find({
+          _id: {
+            $in: Array.from(qtyByProduct.keys()).map(id => new Types.ObjectId(id)),
+          },
+        })
         .select('_id stock')
         .populate({ path: 'stock', select: 'quantity reserved' })
-        .lean();
+        .lean<any>();
 
-      const prodById = new Map(productDocs.map(p => [p._id.toString(), p]));
+      const prodById = new Map<string, any>(
+        productDocs.map((p: any) => [p._id.toString(), p]),
+      );
+
 
       for (const [productId, qty] of qtyByProduct.entries()) {
-        const prod: any = prodById.get(productId);
+        const prod: any = prodById.get(productId) || {};
         const stockRef = Array.isArray(prod?.stock) ? prod.stock[0] : prod?.stock;
-        const stockId = typeof stockRef?._id === 'string' ? new Types.ObjectId(stockRef._id) : stockRef?._id;
-        if (!stockId) throw new BadRequestException(`Producto sin stock asociado: ${productId}`);
+        const stockId =
+          typeof stockRef?._id === 'string'
+            ? new Types.ObjectId(stockRef._id)
+            : stockRef?._id;
+
+        if (!stockId) {
+          throw new BadRequestException(`Producto sin stock asociado: ${productId}`);
+        }
 
         if (reservation.status === 'PENDING') {
           // Liberar reservado
@@ -772,5 +794,136 @@ export class ReservationsService {
     // 3) Reutilizar TODA tu lógica de create (stock, chat, notificación, etc.)
     return this.create(createDto);
   }
+
+  // reservations.service.ts
+  async reopen(id: string) {
+    // 1) Traer la reserva + detalles (producto, cantidad)
+    const reservation = await this.reservationModel
+      .findById(id)
+      .populate({
+        path: 'reservationDetail',
+        select: 'product quantity',
+        populate: {
+          path: 'product',
+          select: '_id', // solo necesitamos el id
+        },
+      })
+      .lean<{
+        _id: Types.ObjectId;
+        status: ReservationStatus;
+        reservationDetail: { product: any; quantity: number }[];
+      }>();
+
+    if (!reservation) {
+      throw new BadRequestException('Reservación no encontrada');
+    }
+
+    const prevStatus = reservation.status;
+
+    if (
+      prevStatus !== ReservationStatus.CONFIRMED &&
+      prevStatus !== ReservationStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        `Solo se pueden reabrir reservas CONFIRMED o CANCELLED (actual: ${prevStatus})`,
+      );
+    }
+
+    const details = reservation.reservationDetail ?? [];
+
+    // Si no hay ítems, solo cambia el estado a PENDING
+    if (!details.length) {
+      return this.reservationModel
+        .findByIdAndUpdate(
+          id,
+          { $set: { status: ReservationStatus.PENDING } },
+          { new: true },
+        )
+        .lean();
+    }
+
+    // 2) Agrupar cantidades por producto
+    const qtyByProduct = new Map<string, number>();
+    for (const d of details) {
+      const pid = (d.product?._id ?? d.product).toString();
+      qtyByProduct.set(pid, (qtyByProduct.get(pid) ?? 0) + Number(d.quantity ?? 0));
+    }
+
+    // 3) Cargar productos con su stock
+    const productDocs = await this.productModel
+      .find({
+        _id: Array.from(qtyByProduct.keys()).map((id) => new Types.ObjectId(id)),
+      })
+      .select('_id stock')
+      .populate({ path: 'stock', select: 'quantity reserved' })
+      .lean<any[]>(); // 👈 importante: any[]
+
+    // 👇 aquí forzamos los genéricos para que prod NO sea {}
+    const prodById = new Map<string, any>(
+      productDocs.map((p: any) => [p._id.toString(), p]),
+    );
+
+    // 4) Ajustar stock según el estado anterior
+    for (const [productId, qty] of qtyByProduct.entries()) {
+      const prod: any = prodById.get(productId);
+      const stockRef = Array.isArray(prod?.stock) ? prod.stock[0] : prod?.stock;
+      const stockId =
+        typeof stockRef?._id === 'string'
+          ? new Types.ObjectId(stockRef._id)
+          : stockRef?._id;
+
+      if (!stockId) {
+        throw new BadRequestException(`Producto sin stock asociado: ${productId}`);
+      }
+
+      if (prevStatus === ReservationStatus.CONFIRMED) {
+        // CONFIRMED -> PENDING
+        // devolvemos lo vendido y lo dejamos reservado de nuevo
+        const upd = await this.stockModel.updateOne(
+          { _id: stockId },
+          {
+            $inc: {
+              quantity: +qty, // vuelve al stock físico
+              reserved: +qty, // queda reservado otra vez
+            },
+          },
+        );
+        if (upd.matchedCount !== 1) {
+          throw new BadRequestException(
+            `No se pudo reabrir reserva para producto ${productId}`,
+          );
+        }
+      } else if (prevStatus === ReservationStatus.CANCELLED) {
+        // CANCELLED -> PENDING
+        // solo volver a reservar; quantity ya estaba disponible
+        const upd = await this.stockModel.updateOne(
+          { _id: stockId },
+          { $inc: { reserved: +qty } },
+        );
+        if (upd.matchedCount !== 1) {
+          throw new BadRequestException(
+            `No se pudo reservar nuevamente producto ${productId}`,
+          );
+        }
+      }
+    }
+
+    // 5) Finalmente marcar la reserva como PENDING
+    const updated = await this.reservationModel
+      .findByIdAndUpdate(
+        id,
+        { $set: { status: ReservationStatus.PENDING } },
+        { new: true },
+      )
+      .populate({
+        path: 'reservationDetail',
+        populate: { path: 'product', select: 'name code price' },
+      })
+      .lean();
+
+    return updated;
+  }
+
+
 
 }

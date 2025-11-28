@@ -66,7 +66,7 @@ export class ReservationsController {
     return updated;
   }
 
-    // GET /reservations/by-chat/:chatId -> preview para el header del chat
+  // GET /reservations/by-chat/:chatId -> preview para el header del chat
   @Get('by-chat/:chatId')
   async findByChat(@Param('chatId') chatId: string) {
     return this.reservationsService.findPreviewByChat(chatId);
@@ -81,6 +81,12 @@ export class ReservationsController {
   @Post('guest')
   async createGuest(@Body() dto: CreateGuestReservationDto) {
     return this.reservationsService.createGuest(dto);
+  }
+
+  @Put(':id/reopen')
+  async reopen(@Param('id') id: string) {
+    console.log('[RES.CTRL] PUT /reservations/%s/reopen', id);
+    return this.reservationsService.reopen(id);
   }
 
 
