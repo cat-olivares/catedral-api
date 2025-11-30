@@ -11,10 +11,13 @@ async function bootstrap() {
 
   app.enableCors({
     origin: [
-      'http://localhost:4200',                    
-      'https://catedral-dashboard.vercel.app',    
+      'http://localhost:4200',               
+      'capacitor://localhost',               
+      'ionic://localhost',                   
+      'https://catedral-dashboard.vercel.app', 
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Authorization',
     credentials: true,
   });
 
