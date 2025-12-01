@@ -1,4 +1,4 @@
-import { BadRequestException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { CreateReservationDto, ReservationStatus } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -42,6 +42,8 @@ const reservationPopulate = [
 
 @Injectable()
 export class ReservationsService {
+
+  private readonly logger = new Logger(ReservationsService.name);
 
   constructor(
     @InjectModel(Reservation.name) private readonly reservationModel: Model<Reservation>,
@@ -200,27 +202,36 @@ export class ReservationsService {
       console.log('[RES.SRV] No se pudo crear/obtener el chat', e);
     }
 
-    // 7) Crear notificación (igual que antes)
-    const userDatos = await this.usersService.findByIdWithPassword(
-      customerId.toString()
-    );
-    const customerRol = userDatos?.role;
-    let customerName: string | undefined;
+    // 7) 🔥 Disparar notificaciones EN BACKGROUND (no bloquear respuesta)
+    (async () => {
+      try {
+        const userDatos = await this.usersService.findByIdWithPassword(
+          customerId.toString()
+        );
+        const customerRol = userDatos?.role;
+        let customerName: string | undefined;
 
-    if (customerRol === 'customer') {
-      customerName = userDatos?.name;
-    } else {
-      customerName = 'Invitad@';
-    }
+        if (customerRol === 'customer') {
+          customerName = userDatos?.name;
+        } else {
+          customerName = 'Invitad@';
+        }
 
-    await this.notificationsService.reservationCreated({
-      reservationId: reservation._id.toString(),
-      customerId: customerId.toString(),
-      customerName,
-      customerEmail: userDatos?.email,   // <- NUEVO
-    });
+        await this.notificationsService.reservationCreated({
+          reservationId: reservation._id.toString(),
+          customerId: customerId.toString(),
+          customerName,
+          customerEmail: userDatos?.email,
+        });
+      } catch (err) {
+        this.logger.error(
+          '[RES.SRV] Error en notificaciones post-reserva',
+          (err as any)?.message || String(err),
+        );
+      }
+    })();
 
-    // 8) populate para el front
+    // 8) populate para el front (esto sí se devuelve al cliente)
     const populated = await this.reservationModel
       .findById(reservation._id)
       .populate({
