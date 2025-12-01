@@ -25,7 +25,7 @@ const reservationPopulate = [
     select: 'product quantity subtotal',
     populate: {
       path: 'product',
-      select: 'code name price imageUrl photoUrl',
+      select: 'code name price img_url',
       populate: [
         {
           path: 'stock',
