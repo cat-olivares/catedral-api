@@ -299,7 +299,7 @@ export class ReservationsService {
         qty: d.quantity ?? 0,
         // uso price o subtotal por seguridad
         price: d.product?.price ?? d.subtotal ?? 0,
-        imageUrl: d.product?.img_url ?? undefined, 
+        imageUrl: d.product?.img_url ?? undefined,
       })),
     };
   }
@@ -867,9 +867,9 @@ export class ReservationsService {
       })
       .select('_id stock')
       .populate({ path: 'stock', select: 'quantity reserved' })
-      .lean<any[]>(); // 👈 importante: any[]
+      .lean<any[]>(); // importante: any[]
 
-    // 👇 aquí forzamos los genéricos para que prod NO sea {}
+    // aquí forzamos los genéricos para que prod NO sea {}
     const prodById = new Map<string, any>(
       productDocs.map((p: any) => [p._id.toString(), p]),
     );
@@ -926,10 +926,7 @@ export class ReservationsService {
         { $set: { status: ReservationStatus.PENDING } },
         { new: true },
       )
-      .populate({
-        path: 'reservationDetail',
-        populate: { path: 'product', select: 'name code price img_url' },
-      })
+      .populate(reservationPopulate) 
       .lean();
 
     return updated;
