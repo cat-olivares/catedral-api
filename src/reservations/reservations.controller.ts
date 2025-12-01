@@ -1,20 +1,24 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException, Put, UseGuards } from '@nestjs/common';
 import { ReservationsService } from './reservations.service';
 import { CreateReservationDto, ReservationStatus } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { Types } from 'mongoose';
 import { CreateGuestReservationDto } from 'src/guest/dto/guestReservation.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('reservations')
 export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) { }
 
+
+  @UseGuards(JwtAuthGuard)
   @Post()
   async create(@Body() createReservationDto: CreateReservationDto) {
     return this.reservationsService.create(createReservationDto);
   }
 
   // Listado de toodo: GET /reservations?status=&page=&limit=
+  @UseGuards(JwtAuthGuard)
   @Get()
   async listAll(@Query('status') status?: ReservationStatus, @Query('page') page?: string, @Query('limit') limit?: string) {
     if (status && !['PENDING', 'CONFIRMED', 'CANCELLED'].includes(status)) {
@@ -26,6 +30,7 @@ export class ReservationsController {
   }
 
   // Listado por usuario id: GET /reservations/user/:userId?status=
+  @UseGuards(JwtAuthGuard)
   @Get('user/:userId')
   async listByUser(@Param('userId') userId: string, @Query('status') status?: ReservationStatus) {
     if (!Types.ObjectId.isValid(userId)) {
@@ -37,16 +42,19 @@ export class ReservationsController {
     return this.reservationsService.listByUser(userId, status);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   async update(@Param('id') id: string, @Body() updateReservationDto: UpdateReservationDto) {
     return this.reservationsService.update(id, updateReservationDto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async remove(@Param('id') id: string) {
     return this.reservationsService.remove(id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Put(':id/complete')
   async complete(@Param('id') id: string) {
     console.log('[RES.CTRL] PUT /reservations/%s/complete', id);
@@ -57,6 +65,7 @@ export class ReservationsController {
   }
 
   // PUT /reservations/:id/cancel  -> status = CANCELLED
+  @UseGuards(JwtAuthGuard)
   @Put(':id/cancel')
   async cancel(@Param('id') id: string) {
     console.log('[RES.CTRL] PUT /reservations/%s/cancel', id);
@@ -67,12 +76,14 @@ export class ReservationsController {
   }
 
   // GET /reservations/by-chat/:chatId -> preview para el header del chat
+  @UseGuards(JwtAuthGuard)
   @Get('by-chat/:chatId')
   async findByChat(@Param('chatId') chatId: string) {
     return this.reservationsService.findPreviewByChat(chatId);
   }
 
   //Reserva en detalle: GET /reservations/:id
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.reservationsService.findOne(id);
@@ -83,6 +94,7 @@ export class ReservationsController {
     return this.reservationsService.createGuest(dto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Put(':id/reopen')
   async reopen(@Param('id') id: string) {
     console.log('[RES.CTRL] PUT /reservations/%s/reopen', id);
