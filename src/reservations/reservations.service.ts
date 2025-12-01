@@ -236,7 +236,7 @@ export class ReservationsService {
       .findById(reservation._id)
       .populate({
         path: 'reservationDetail',
-        populate: { path: 'product', select: 'name code price' },
+        populate: { path: 'product', select: 'name code price img_url' },
       })
       .lean();
 
@@ -280,7 +280,7 @@ export class ReservationsService {
         populate: {
           path: 'product',
           // ajusta los campos de imagen a lo que tengas realmente
-          select: 'code name price imageUrl photoUrl',
+          select: 'code name price img_url',
         },
       })
       .lean();
@@ -299,7 +299,7 @@ export class ReservationsService {
         qty: d.quantity ?? 0,
         // uso price o subtotal por seguridad
         price: d.product?.price ?? d.subtotal ?? 0,
-        imageUrl: d.product?.imageUrl ?? d.product?.photoUrl ?? undefined,
+        imageUrl: d.product?.img_url ?? undefined, 
       })),
     };
   }
@@ -682,7 +682,7 @@ export class ReservationsService {
       .findByIdAndUpdate(id, { $set: updateDoc }, { new: true })
       .populate({
         path: 'reservationDetail',
-        populate: { path: 'product', select: 'name code price' },
+        populate: { path: 'product', select: 'name code price img_url' },
       })
       .lean();
 
@@ -928,7 +928,7 @@ export class ReservationsService {
       )
       .populate({
         path: 'reservationDetail',
-        populate: { path: 'product', select: 'name code price' },
+        populate: { path: 'product', select: 'name code price img_url' },
       })
       .lean();
 
