@@ -7,18 +7,11 @@ import { initFirebase } from './firebase/firebase.init';
 async function bootstrap() {
   initFirebase();
 
-  const app = await NestFactory.create(AppModule);
-
-  app.enableCors({
-    origin: [
-      'http://localhost:4200',               
-      'capacitor://localhost',               
-      'ionic://localhost',                   
-      'https://catedral-dashboard.vercel.app', 
-    ],
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Authorization',
-    credentials: true,
+  const app = await NestFactory.create(AppModule, {
+    cors: {
+      origin: true,         
+      credentials: true,     
+    },
   });
 
   app.useGlobalPipes(
