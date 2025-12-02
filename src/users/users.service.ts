@@ -38,6 +38,10 @@ export class UsersService {
 		return await this.userModel.findById(id).select('+password');
 	}
 
+	async findById(id: string) {
+		return await this.userModel.findById(id);
+	}
+
 	async findByEmail(email: string) {
 		return await this.userModel.findOne({ email: email.toLowerCase() });
 	}
