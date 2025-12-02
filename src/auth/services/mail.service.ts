@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
 
 export interface ReservationCreatedEmailPayload {
-  to: string;           // correo del cliente
+  to: string;          
   reservationId: string;
   customerName?: string;
 }
@@ -79,7 +79,8 @@ export class MailService {
     const { to, reservationId, customerName } = payload;
 
     const base = this.frontendUrl.replace(/\/+$/, '');
-    const reservationLink = `${base}/profile/reservations`;
+    // Link directo al chat de la reserva
+    const chatLink = `${base}/chat/${reservationId}`;
     const safeName = customerName || 'cliente';
 
     this.logger.log(`[MAIL] Reserva creada → a: ${to}`);
@@ -95,14 +96,14 @@ export class MailService {
       to,
       subject: 'Hemos recibido tu reserva',
       html: `
-        <p>Hola ${safeName},</p>
-        <p>Hemos recibido tu reserva <strong>#${reservationId}</strong>.</p>
-        <p>En breve nos pondremos en contacto contigo para coordinar el pedido.</p>
-        <p>Puedes revisar tus reservas ingresando aquí:
-          <a href="${reservationLink}">${reservationLink}</a>
-        </p>
-        <p>Gracias por comprar en Perfumes Catedral 💜</p>
-      `,
+      <p>Hola ${safeName},</p>
+      <p>Hemos recibido tu reserva <strong>#${reservationId}</strong>.</p>
+      <p>En breve nos pondremos en contacto contigo para coordinar el pedido.</p>
+      <p>Puedes revisar el detalle de tu pedido y hablar con nosotros en el chat aquí:
+        <a href="${chatLink}">${chatLink}</a>
+      </p>
+      <p>Gracias por comprar en Perfumes Catedral 💜</p>
+    `,
     });
 
     this.logger.log('[MAIL] Reserva creada enviado OK:', { data, error });
