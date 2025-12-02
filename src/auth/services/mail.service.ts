@@ -4,9 +4,9 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface ReservationCreatedEmailPayload {
-  to: string;                
-  reservationId: string;     
-  customerName?: string;     
+  to: string;
+  reservationId: string;
+  customerName?: string;
 }
 
 @Injectable()
@@ -15,24 +15,27 @@ export class MailService {
 
   constructor(private config: ConfigService) {
     this.transporter = nodemailer.createTransport({
-      host: this.config.get<string>('MAIL_HOST', 'smtp.ethereal.email'),
-      port: this.config.get<number>('MAIL_PORT', 587),
+      host: this.config.get<string>('MAIL_HOST', 'smtp.gmail.com'),
+      port: this.config.get<number>('MAIL_PORT', 465),
+      secure: true, 
       auth: {
-        user: this.config.get<string>('MAIL_USER', 'thelma84@ethereal.email'),
-        pass: this.config.get<string>('MAIL_PASS', 'm5qHPHnwvzUjptRkcx'),
+        user: this.config.get<string>('MAIL_USER', 'catedralperfumes@gmail.com'),
+        pass: this.config.get<string>('MAIL_PASS'), 
       },
     });
   }
 
   async sendResetPassEmail(to: string, token: string) {
     const resetlink = `${
-      this.config.get<string>('FRONTEND_URL', 'http://localhost:4200')
+      this.config.get<string>('FRONTEND_URL', 'https://perfumescatedral.vercel.app')
     }/reset-password?token=${token}`;
 
     await this.transporter.sendMail({
-      from: `"Soporte Perfumes Catedral" <${
-        this.config.get<string>('MAIL_USER', 'noreply@PerfumesCatedral.cl')
-      }>`,
+      from:
+        this.config.get<string>(
+          'MAIL_FROM',
+          `"Soporte Perfumes Catedral" <catedralperfumes@gmail.com>`,
+        ),
       to,
       subject: 'Restablecer contraseña',
       html: `
@@ -49,18 +52,18 @@ export class MailService {
 
     const baseUrl = this.config.get<string>(
       'FRONTEND_URL',
-      'http://localhost:4200',
+      'https://perfumescatedral.vercel.app',
     );
 
-    // Ajusta la URL al detalle de reserva que tengas en el front
     const reservationLink = `${baseUrl.replace(/\/+$/, '')}/profile/reservations`;
-
     const safeName = customerName || 'cliente';
 
     await this.transporter.sendMail({
-      from: `"Perfumes Catedral" <${
-        this.config.get<string>('MAIL_USER', 'noreply@PerfumesCatedral.cl')
-      }>`,
+      from:
+        this.config.get<string>(
+          'MAIL_FROM',
+          `"Perfumes Catedral" <catedralperfumes@gmail.com>`,
+        ),
       to,
       subject: 'Hemos recibido tu reserva',
       html: `
