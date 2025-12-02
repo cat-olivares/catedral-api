@@ -59,6 +59,7 @@ export class NotificationsService {
 
   async reservationCreated(params: {
     reservationId: string;
+    chatId?: string;
     customerId: string;
     customerName?: string;
     customerEmail?: string; 
@@ -91,6 +92,7 @@ export class NotificationsService {
         to: customerEmail,
         reservationId,
         customerName,
+        chatId: params.chatId,
       };
 
       try {

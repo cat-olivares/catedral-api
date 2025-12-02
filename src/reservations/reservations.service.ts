@@ -221,6 +221,7 @@ export class ReservationsService {
           reservationId: reservation._id.toString(),
           customerId: customerId.toString(),
           customerName,
+          chatId: chatId?.toString(),
           customerEmail: userDatos?.email,
         });
       } catch (err) {

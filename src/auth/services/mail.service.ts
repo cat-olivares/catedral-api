@@ -4,8 +4,9 @@ import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
 
 export interface ReservationCreatedEmailPayload {
-  to: string;          
+  to: string;
   reservationId: string;
+  chatId?: string;
   customerName?: string;
 }
 
@@ -29,7 +30,7 @@ export class MailService {
     // Remitente: viene de env, o el fallback de Resend
     this.from =
       this.config.get<string>('MAIL_FROM') ||
-      'Catedral Perfumes <onboarding@resend.dev>';
+      'Perfumes Catedral <no-reply@perfumescatedral.cl>';
 
     // URL del front
     this.frontendUrl =
@@ -76,15 +77,17 @@ export class MailService {
   /* ------------------------------- RESERVA CREADA ---------------------------------- */
 
   async sendReservationCreatedEmail(payload: ReservationCreatedEmailPayload) {
-    const { to, reservationId, customerName } = payload;
+    const { to, reservationId, customerName, chatId } = payload;
 
     const base = this.frontendUrl.replace(/\/+$/, '');
-    // Link directo al chat de la reserva
-    const chatLink = `${base}/chat/${reservationId}`;
+
+    // Link directo al chat (usa el id del chat, NO el de la reserva)
+    const chatLink = `${base}/chat/${chatId}`;
     const safeName = customerName || 'cliente';
 
     this.logger.log(`[MAIL] Reserva creada → a: ${to}`);
     this.logger.log(`[MAIL] From usado: ${this.from}`);
+    this.logger.log(`[MAIL] Chat link: ${chatLink}`);
 
     if (!this.resend) {
       this.logger.error('[MAIL] Resend no inicializado');
@@ -112,4 +115,5 @@ export class MailService {
       this.logger.error('[MAIL] ERROR enviando mail de reserva:', error);
     }
   }
+
 }
