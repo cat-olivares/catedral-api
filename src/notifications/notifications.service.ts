@@ -3,17 +3,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as admin from 'firebase-admin';
-import {
-  Notification,
-  NotificationDocument,
-  NotificationStatus,
-  NotificationType,
-} from './schemas/notification.schema';
-import { DeviceToken } from './schemas/device-token.schema';
-import {
-  MailService,
-  ReservationCreatedEmailPayload,
-} from 'src/auth/services/mail.service';
+import { Notification, NotificationDocument, NotificationStatus, NotificationType,} from './schemas/notification.schema';
+import { DevicePlatform, DeviceToken } from './schemas/device-token.schema'; // asegúrate de importar también DevicePlatform
+import { MailService, ReservationCreatedEmailPayload,} from 'src/auth/services/mail.service';
 
 @Injectable()
 export class NotificationsService {
@@ -30,17 +22,46 @@ export class NotificationsService {
     private readonly mail: MailService,
   ) { }
 
-  /**
-   * Enviar notificación cuando se crea una reserva:
-   *  - Crea registro Notification
-   *  - (Opcional) envía push al admin
-   *  - Envía email al cliente
-   */
+  async registerDevice(params: {
+    userId: string | Types.ObjectId;
+    token: string;
+    platform?: DevicePlatform;
+  }) {
+    const { userId, token, platform } = params;
+
+    const userObjectId =
+      userId instanceof Types.ObjectId ? userId : new Types.ObjectId(userId);
+
+    this.logger.log(
+      `[Notifications] registerDevice user=${userObjectId.toHexString()} platform=${platform} token=${token.substring(
+        0,
+        12,
+      )}...`,
+    );
+
+    // upsert por token
+    await this.tokenModel.updateOne(
+      { token },
+      {
+        $set: {
+          userId: userObjectId,
+          token,
+          platform: platform ?? DevicePlatform.ANDROID,
+          isActive: true,
+          lastSeenAt: new Date(),
+        },
+      },
+      { upsert: true },
+    );
+
+    return { ok: true };
+  }
+
   async reservationCreated(params: {
     reservationId: string;
     customerId: string;
     customerName?: string;
-    customerEmail?: string; // <- lo usaremos para el correo
+    customerEmail?: string; 
   }) {
     const { reservationId, customerId, customerName, customerEmail } = params;
     const linkAlChat = `/admin/chat/${customerId}`;

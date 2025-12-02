@@ -1,7 +1,9 @@
-import { Body, Controller, Post, Get } from '@nestjs/common';
-import { IsOptional, IsString } from 'class-validator';
+import { Body, Controller, Post, Get, UseGuards, Req } from '@nestjs/common';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { NotificationsService } from './notifications.service';
 import { admin } from '../firebase/firebase.init';
+import { DevicePlatform } from './schemas/device-token.schema';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 // === DTOs simples (se validan con tu ValidationPipe global) ===
 class TestReservationPushDto {
@@ -12,6 +14,15 @@ class TestReservationPushDto {
 
 class TestDirectPushDto {
   @IsString() token: string;
+}
+
+class RegisterDeviceDto {
+  @IsString()
+  token: string;
+
+  @IsOptional()
+  @IsEnum(DevicePlatform)
+  platform?: DevicePlatform;
 }
 
 @Controller('notifications')
@@ -53,6 +64,17 @@ export class NotificationsController {
   @Get()
   findAll() {
     return this.notificationsService.findAll();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('register-device')
+  async registerDevice(@Req() req, @Body() dto: RegisterDeviceDto) {
+    const userId = req.user._id || req.user.id; 
+    return this.notificationsService.registerDevice({
+      userId,
+      token: dto.token,
+      platform: dto.platform ?? DevicePlatform.ANDROID,
+    });
   }
 
 }
