@@ -17,35 +17,44 @@ export class MailService {
     this.transporter = nodemailer.createTransport({
       host: this.config.get<string>('MAIL_HOST', 'smtp.gmail.com'),
       port: this.config.get<number>('MAIL_PORT', 465),
-      secure: true, 
+      secure: true,
       auth: {
         user: this.config.get<string>('MAIL_USER', 'catedralperfumes@gmail.com'),
-        pass: this.config.get<string>('MAIL_PASS' , 'hehw xcug bgts jdko'), 
+        pass: this.config.get<string>('MAIL_PASS') || '',
       },
     });
   }
 
   async sendResetPassEmail(to: string, token: string) {
-    const resetlink = `${
-      this.config.get<string>('FRONTEND_URL', 'https://perfumescatedral.vercel.app')
-    }/reset-password?token=${token}`;
+    const resetlink = `${this.config.get<string>('FRONTEND_URL', 'https://perfumescatedral.vercel.app')
+      }/reset-password?token=${token}`;
 
-    await this.transporter.sendMail({
-      from:
-        this.config.get<string>(
+    console.log('[MAIL] Intentando enviar mail de reset a:', to);
+    console.log('[MAIL] Link:', resetlink);
+
+    try {
+      const info = await this.transporter.sendMail({
+        from: this.config.get<string>(
           'MAIL_FROM',
           `"Soporte Perfumes Catedral" <catedralperfumes@gmail.com>`,
         ),
-      to,
-      subject: 'Restablecer contraseña',
-      html: `
+        to,
+        subject: 'Restablecer contraseña',
+        html: `
         <p>Para restablecer tu contraseña, 
            <a href="${resetlink}">haz click aquí</a>.
         </p>
         <p>Si no solicitaste un cambio de contraseña, ignora este correo.</p>
       `,
-    });
+      });
+
+      console.log('[MAIL] Enviado OK. messageId=', info.messageId, 'response=', info.response);
+    } catch (err) {
+      console.error('[MAIL] ERROR enviando mail de reset:', err);
+      throw err; 
+    }
   }
+
 
   async sendReservationCreatedEmail(payload: ReservationCreatedEmailPayload) {
     const { to, reservationId, customerName } = payload;
