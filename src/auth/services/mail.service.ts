@@ -20,7 +20,7 @@ export class MailService {
       secure: true, 
       auth: {
         user: this.config.get<string>('MAIL_USER', 'catedralperfumes@gmail.com'),
-        pass: this.config.get<string>('MAIL_PASS'), 
+        pass: this.config.get<string>('MAIL_PASS' , 'hehwxcugbgtsjdko'), 
       },
     });
   }
